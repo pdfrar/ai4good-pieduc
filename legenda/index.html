@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="description" content="Legenda ao vivo da fala do professor, com histórico da aula. Parte do PIEDUC.">
+<title>PIEDUC · Legenda ao vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+  /* Tela única: barra de controles no topo, legenda grande (3 linhas que rolam sozinhas)
+     e, abaixo, o histórico da aula com horário, que ocupa o resto da tela e rola por dentro. */
+  :root {
+    --bg: #000; --surface: #121212; --fg: #fff; --muted: #c9c9c9; --line: #3d3d3d;
+    --accent: #ffd400; --accent-fg: #000; --ok: #3ddc84; --warn: #ffb020; --err: #ff6b6b;
+    --scale: 1;
+    --font: "Atkinson Hyperlegible", system-ui, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #fff; --surface: #f1f1f1; --fg: #000; --muted: #3b3b3b; --line: #b9b9b9;
+    --accent: #0038a8; --accent-fg: #fff; --ok: #0a7a3d; --warn: #8a5a00; --err: #b00020;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font);
+    font-size: 16px; line-height: 1.45;
+    display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden;
+  }
+  .gutter {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; min-width: 0; }
+  .brand b { font-size: 20px; letter-spacing: .02em; }
+  .brand span { color: var(--muted); }
+  .status { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); white-space: nowrap; }
+  .status i { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+  .status[data-s="listening"] i { background: var(--ok); animation: pulse 1.4s ease-in-out infinite; }
+  .status[data-s="connecting"] i, .status[data-s="reconnecting"] i { background: var(--warn); }
+  .status[data-s="error"] i { background: var(--err); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  button {
+    font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 14px;
+    border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--fg); }
+  button:focus-visible, a:focus-visible, .hist:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-size: 17px; padding: 0 20px; }
+  .primary:hover:not(:disabled) { border-color: var(--accent); filter: brightness(1.08); }
+  .primary.on { background: transparent; color: var(--fg); }
+
+  .msg { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--warn); }
+  .msg.info { border-color: var(--line); }
+  .msg a { color: inherit; font-weight: 700; }
+  .msg-wrap { flex: none; }
+
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 12px; padding-bottom: 8px; }
+
+  .live {
+    flex: none; font-size: calc(clamp(26px, 4.6vw, 60px) * var(--scale)); line-height: 1.25; font-weight: 700;
+    height: min(calc(3.75em + 28px), 50dvh); padding: 14px 18px; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    border: 2px solid var(--line); border-radius: 14px; background: var(--surface);
+  }
+  .live.on { border-color: var(--accent); }
+  .live p { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+  .live.on, .live[data-fresh="1"] {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.1em);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1.1em);
+  }
+  .live .interim { color: var(--muted); }
+  .live .placeholder { color: var(--muted); font-weight: 400; font-size: max(18px, .55em); }
+
+  .hist-wrap { flex: 1; min-height: 140px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; position: relative; overflow: hidden; }
+  .hist-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px 8px 16px; border-bottom: 1px solid var(--line); }
+  .hist-head h2 { font-size: 16px; margin: 0 auto 0 0; }
+  .hist-head h2 small { color: var(--muted); font-weight: 400; font-size: 14px; }
+  .hist-head button { min-height: 40px; font-size: 14px; }
+  .empty { margin: 0; padding: 16px; color: var(--muted); }
+  .hist {
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 4px 16px 72px; list-style: none;
+    font-size: calc(clamp(18px, 1.9vw, 24px) * var(--scale));
+  }
+  .hist li { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .hist li:last-child { border-bottom: 0; }
+  .hist time { font-size: max(13px, .6em); color: var(--muted); font-variant-numeric: tabular-nums; padding-top: .35em; }
+  .hist p { margin: 0; overflow-wrap: anywhere; }
+  .jump { position: absolute; right: 14px; bottom: 14px; background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+  footer { flex: none; padding-top: 2px; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); font-size: 13px; color: var(--muted); }
+  footer a { color: inherit; }
+  footer summary { cursor: pointer; padding: 4px 0; width: fit-content; }
+  footer details p { margin: 2px 0 4px; max-width: 90ch; }
+  :fullscreen footer { display: none; }
+
+  @media (max-width: 600px) {
+    .brand span, .hide-sm { display: none; }
+    .bar { gap: 8px; }
+    .tools { gap: 6px; }
+    .tools button { padding: 0 10px; min-height: 40px; }
+    .primary { flex: 1 1 100%; order: 5; }
+    main { gap: 8px; padding-top: 8px; }
+    .hist-head { padding: 6px 8px 6px 12px; gap: 6px; }
+    .hist-head button { padding: 0 9px; }
+    .hist { padding: 2px 12px 64px; }
+    .hist li { gap: 2px 10px; padding: 6px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .status i { animation: none !important; } }
+</style>
+</head>
+<body>
+<header class="bar gutter">
+  <div class="brand"><b>PIEDUC</b><span>Legenda ao vivo</span></div>
+  <div class="status" id="status" data-s="idle" role="status"><i aria-hidden="true"></i><span>Parado</span></div>
+  <button class="primary" id="toggle" type="button">Começar legenda</button>
+  <div class="tools" role="group" aria-label="Ajustes de leitura">
+    <button id="smaller" type="button" aria-label="Diminuir letra">A−</button>
+    <button id="bigger" type="button" aria-label="Aumentar letra">A+</button>
+    <button id="theme" type="button">Fundo claro</button>
+    <button id="fullscreen" type="button">Tela cheia</button>
+  </div>
+</header>
+
+<div class="msg-wrap gutter"><div class="msg" id="msg" role="alert" hidden></div></div>
+
+<main class="gutter">
+  <section class="live" id="live" aria-hidden="true"><p id="live-text"></p></section>
+
+  <section class="hist-wrap" aria-labelledby="hist-title">
+    <div class="hist-head">
+      <h2 id="hist-title">Histórico<span class="hide-sm"> da aula</span> <small id="count" class="hide-sm"></small></h2>
+      <button id="copy" type="button">Copiar</button>
+      <button id="download" type="button">Baixar<span class="hide-sm"> .txt</span></button>
+      <button id="clear" type="button">Apagar</button>
+    </div>
+    <p class="empty" id="empty">O que for dito aparece aqui, com o horário, para reler depois.</p>
+    <ol class="hist" id="hist" role="log" aria-live="polite" aria-label="Histórico da legenda" tabindex="0"></ol>
+    <button class="jump" id="jump" type="button" hidden>↓ Ir para o fim</button>
+  </section>
+</main>
+
+<footer class="gutter">
+  <details>
+    <summary>Privacidade: o texto fica só neste aparelho</summary>
+    <p>O áudio vai para o serviço de reconhecimento de fala do navegador (Google, no Chrome; Microsoft, no Edge) só para virar texto.
+    O texto fica salvo apenas neste aparelho; o PIEDUC não guarda nada em servidor. "Apagar" remove o histórico.
+    <a id="demo-link" href="?demo">Ver demonstração</a></p>
+  </details>
+</footer>
+
+<noscript><p class="gutter">A legenda precisa de JavaScript ativado.</p></noscript>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (s) => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  const DEMO = params.has("demo");
+  const LANG = "pt-BR";
+  const IS_ANDROID = /Android/i.test(navigator.userAgent);
+  const KEY_HIST = DEMO ? "pieduc-legenda-demo" : "pieduc-legenda-historico";
+  const KEY_PREFS = "pieduc-legenda-prefs";
+  const MERGE_MS = 3000;     // trechos com menos de 3 s de pausa viram um só parágrafo no histórico
+  const MERGE_MAX = 240;     // ...até esse tamanho
+  const LIVE_CHARS = 400;    // quanto texto recente a legenda grande recebe (o excesso some por cima)
+
+  const store = {
+    get(k, fallback) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+
+  // ---------- Modo demonstração: simula um professor falando, sem microfone ----------
+  const DEMO_LINES = [
+    "bom dia turma hoje a gente vai falar sobre fotossíntese",
+    "a fotossíntese é o processo que as plantas usam para produzir o próprio alimento",
+    "elas precisam de três coisas luz do sol água e gás carbônico",
+    "a água entra pelas raízes e sobe pelo caule até as folhas",
+    "o gás carbônico entra pelas folhas por uns buraquinhos chamados estômatos",
+    "dentro da folha a clorofila captura a energia da luz",
+    "com essa energia a planta transforma água e gás carbônico em glicose",
+    "e de quebra ela libera oxigênio que é o ar que a gente respira",
+    "alguém sabe me dizer por que as folhas são verdes",
+    "isso mesmo é por causa da clorofila que reflete a luz verde",
+  ];
+  class FakeRecognition {
+    constructor() { this.on = false; this.timer = null; this.pending = ""; }
+    start() {
+      if (this.on) throw new DOMException("already started", "InvalidStateError");
+      this.on = true;
+      setTimeout(() => { if (this.on && this.onstart) this.onstart(); }, 200);
+      this.speak();
+    }
+    stop() { this.finish(true); }
+    abort() { this.finish(false); }
+    finish(keepPending) {
+      if (!this.on) return;
+      this.on = false; clearTimeout(this.timer);
+      if (keepPending && this.pending) this.emit(this.pending, true);
+      this.pending = "";
+      setTimeout(() => this.onend && this.onend(), 60);
+    }
+    speak() {
+      const line = DEMO_LINES[FakeRecognition.i++ % DEMO_LINES.length];
+      const words = line.split(" ");
+      let k = 0;
+      const step = () => {
+        if (!this.on) return;
+        k++;
+        if (k < words.length) {
+          this.pending = words.slice(0, k).join(" ");
+          this.emit(this.pending, false);
+          this.timer = setTimeout(step, 170 + Math.random() * 170);
+        } else {
+          this.pending = "";
+          this.emit(line, true);
+          this.timer = setTimeout(() => this.speak(), 900 + Math.random() * 1100);
+        }
+      };
+      this.timer = setTimeout(step, 500);
+    }
+    emit(text, isFinal) {
+      const res = Object.assign([{ transcript: text, confidence: 0.9 }], { isFinal });
+      if (this.onresult) this.onresult({ resultIndex: 0, results: [res] });
+    }
+  }
+  FakeRecognition.i = 0;
+
+  const SR = DEMO ? FakeRecognition : (window.SpeechRecognition || window.webkitSpeechRecognition || null);
+
+  // ---------- Elementos ----------
+  const el = {
+    toggle: $("#toggle"), status: $("#status"), statusText: $("#status span"), msg: $("#msg"),
+    live: $("#live"), liveText: $("#live-text"),
+    hist: $("#hist"), empty: $("#empty"), count: $("#count"), jump: $("#jump"),
+    copy: $("#copy"), download: $("#download"), clear: $("#clear"),
+    smaller: $("#smaller"), bigger: $("#bigger"), theme: $("#theme"), fullscreen: $("#fullscreen"),
+    demoLink: $("#demo-link"), themeColor: document.querySelector('meta[name="theme-color"]'),
+  };
+
+  // ---------- Estado ----------
+  let entries = store.get(KEY_HIST, []);
+  if (!Array.isArray(entries)) entries = [];
+  let interim = "";
+  let rec = null;           // reconhecedor atual
+  let want = false;         // a pessoa quer a legenda ligada
+  let running = false;      // o reconhecedor atual está ativo
+  let startedAt = 0, gotResult = false, fastEnds = 0, retryTimer = null;
+  let msgKind = "";
+
+  // ---------- Preferências (letra e tema) ----------
+  const prefs = Object.assign({ scale: 1, theme: null }, store.get(KEY_PREFS, {}));
+  if (!prefs.theme) prefs.theme = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+  function applyPrefs() {
+    document.documentElement.style.setProperty("--scale", prefs.scale);
+    document.documentElement.dataset.theme = prefs.theme;
+    el.theme.textContent = prefs.theme === "light" ? "Fundo escuro" : "Fundo claro";
+    el.themeColor.setAttribute("content", prefs.theme === "light" ? "#ffffff" : "#000000");
+    el.smaller.disabled = prefs.scale <= 0.7;
+    el.bigger.disabled = prefs.scale >= 2.2;
+    store.set(KEY_PREFS, prefs);
+  }
+  function setScale(delta) {
+    prefs.scale = Math.round(Math.min(2.2, Math.max(0.7, prefs.scale + delta)) * 100) / 100;
+    applyPrefs(); renderLive();
+  }
+
+  // ---------- Mensagens e status ----------
+  function showMsg(html, kind) {
+    msgKind = kind || "warn";
+    el.msg.innerHTML = html;
+    el.msg.className = "msg" + (msgKind === "info" ? " info" : "");
+    el.msg.hidden = false;
+  }
+  function clearMsg(onlyKind) {
+    if (onlyKind && msgKind !== onlyKind) return;
+    el.msg.hidden = true; el.msg.textContent = ""; msgKind = "";
+    if (DEMO) showDemoNotice();
+  }
+  const STATUS = { idle: "Parado", connecting: "Ligando…", listening: "Ouvindo", reconnecting: "Reconectando…", paused: "Pausado", error: "Parado" };
+  function setStatus(s) { el.status.dataset.s = s; el.statusText.textContent = STATUS[s] || s; }
+
+  function setUI() {
+    el.toggle.textContent = want ? "Pausar legenda" : (entries.length ? "Continuar legenda" : "Começar legenda");
+    el.toggle.classList.toggle("on", want);
+    el.toggle.setAttribute("aria-pressed", String(want));
+    el.live.classList.toggle("on", want);
+    const has = entries.length > 0;
+    el.copy.disabled = el.download.disabled = el.clear.disabled = !has;
+    el.empty.hidden = has;
+    el.count.textContent = has ? `· ${entries.length} ${entries.length === 1 ? "trecho" : "trechos"}` : "";
+    renderLive();
+  }
+
+  // ---------- Texto ----------
+  const clean = (s) => String(s || "").replace(/\s+/g, " ").trim();
+  const capitalize = (s) => s.charAt(0).toLocaleUpperCase("pt-BR") + s.slice(1);
+  const fmtTime = (t) => new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  function renderLive() {
+    el.liveText.replaceChildren();
+    if (!want && !interim && (!entries.length || el.live.dataset.fresh !== "1")) {
+      const ph = document.createElement("span");
+      ph.className = "placeholder";
+      ph.textContent = !SR ? "Este navegador não faz legenda. Use o Chrome ou o Edge."
+        : entries.length ? "Legenda pausada. Toque em Continuar legenda para seguir."
+        : "Toque em Começar legenda e fale perto do microfone. A fala aparece aqui, grande.";
+      el.liveText.append(ph);
+      return;
+    }
+    // cada trecho começa numa linha nova: o reconhecimento não põe pontuação, então frases coladas confundem
+    let recent = "";
+    for (let i = entries.length - 1; i >= 0 && recent.length < LIVE_CHARS; i--) recent = entries[i].text + "\n" + recent;
+    recent = recent.slice(-LIVE_CHARS).trim();
+    const fin = document.createElement("span"); fin.textContent = recent;
+    el.liveText.append(fin);
+    if (interim) {
+      const im = document.createElement("span"); im.className = "interim";
+      const last = entries[entries.length - 1];
+      const sameLine = last && Date.now() - last.end < MERGE_MS; // vai ser emendado no mesmo trecho
+      im.textContent = (recent ? (sameLine ? " " : "\n") : "") + interim;
+      el.liveText.append(im);
+    }
+  }
+
+  // ---------- Histórico ----------
+  function nearBottom() { return el.hist.scrollHeight - el.hist.scrollTop - el.hist.clientHeight < 80; }
+  function scrollToEnd() { el.hist.scrollTop = el.hist.scrollHeight; el.jump.hidden = true; }
+
+  function makeLi(entry) {
+    const li = document.createElement("li");
+    const time = document.createElement("time");
+    time.dateTime = new Date(entry.t).toISOString();
+    time.textContent = fmtTime(entry.t);
+    const p = document.createElement("p");
+    p.textContent = entry.text;
+    li.append(time, p);
+    return li;
+  }
+  function renderHistory() {
+    el.hist.replaceChildren(...entries.map(makeLi));
+    scrollToEnd();
+  }
+
+  function addFinal(raw) {
+    const text = clean(raw);
+    if (!text) return;
+    const now = Date.now();
+    const stick = nearBottom();
+    const last = entries[entries.length - 1];
+    if (last && now - last.end < MERGE_MS && last.text.length < MERGE_MAX) {
+      last.text += " " + text;
+      last.end = now;
+      const p = el.hist.lastElementChild && el.hist.lastElementChild.querySelector("p");
+      if (p) p.textContent = last.text;
+    } else {
+      const entry = { t: now, end: now, text: capitalize(text) };
+      entries.push(entry);
+      el.hist.append(makeLi(entry));
+    }
+    el.live.dataset.fresh = "1";
+    store.set(KEY_HIST, entries);
+    if (stick) scrollToEnd(); else el.jump.hidden = false;
+    setUI();
+  }
+
+  function transcript() {
+    const d = entries.length ? new Date(entries[0].t) : new Date();
+    return `PIEDUC · Legenda da aula · ${d.toLocaleDateString("pt-BR")}\n\n` +
+      entries.map((e) => `[${fmtTime(e.t)}] ${e.text}`).join("\n") + "\n";
+  }
+
+  // ---------- Reconhecimento de fala ----------
+  function makeRec() {
+    const r = new SR();
+    r.lang = LANG;
+    r.interimResults = true;
+    r.continuous = !IS_ANDROID;   // no Android, o modo contínuo repete frases; lá reiniciamos a cada frase
+    r.maxAlternatives = 1;
+
+    r.onstart = () => { if (r === rec) setStatus("listening"); };
+    r.onresult = (e) => {
+      let im = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i];
+        const tx = res && res[0] ? res[0].transcript : "";
+        if (res.isFinal) addFinal(tx); else im += tx;
+      }
+      if (r === rec) {
+        gotResult = true; fastEnds = 0;
+        interim = clean(im);
+        clearMsg("network");
+        if (want) setStatus("listening");
+        renderLive();
+      }
+    };
+    r.onerror = (e) => { if (r === rec) handleError(e.error); };
+    r.onend = () => {
+      if (r !== rec) return;
+      running = false;
+      if (interim) { const pending = interim; interim = ""; addFinal(pending); }
+      renderLive();
+      if (!want) { if (el.status.dataset.s !== "error") setStatus("paused"); return; }
+      const quick = !gotResult && Date.now() - startedAt < 2000;
+      fastEnds = quick ? fastEnds + 1 : 0;
+      if (fastEnds >= 6) {
+        stopListening("error");
+        showMsg("A legenda parou porque o reconhecimento de fala não está respondendo. Confira a internet e o microfone e toque em <b>Continuar legenda</b>.");
+        return;
+      }
+      if (fastEnds >= 2) setStatus("reconnecting");
+      scheduleLaunch(fastEnds ? 500 * 2 ** (fastEnds - 1) : 120);
+    };
+    return r;
+  }
+
+  function handleError(code) {
+    switch (code) {
+      case "no-speech":
+      case "aborted":
+        return; // o onend religa sozinho
+      case "not-allowed":
+      case "service-not-allowed":
+        if (document.hidden) return; // o celular bloqueia o microfone com a tela apagada; religamos ao voltar
+        stopListening("error");
+        showMsg("O navegador bloqueou o microfone. Toque no cadeado ao lado do endereço, permita o <b>microfone</b> e toque em <b>Começar legenda</b> de novo.");
+        return;
+      case "audio-capture":
+        stopListening("error");
+        showMsg("Nenhum microfone encontrado. Conecte um microfone (ou confira se outro app está usando) e tente de novo.");
+        return;
+      case "language-not-supported":
+        stopListening("error");
+        showMsg("Este navegador não reconhece fala em português. Use o Google Chrome.");
+        return;
+      case "network":
+        showMsg("Sem conexão com o serviço de reconhecimento de fala. Tentando de novo…", "network");
+        return;
+      default:
+        showMsg(`O reconhecimento de fala deu um erro (${code}). Tentando de novo…`, "network");
+    }
+  }
+
+  function scheduleLaunch(delay) {
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(launch, delay);
+  }
+  function launch() {
+    clearTimeout(retryTimer);
+    if (!want || running) return;
+    if (document.hidden) return; // volta quando a tela aparecer de novo
+    rec = makeRec();
+    startedAt = Date.now(); gotResult = false;
+    try {
+      rec.start();
+      running = true;
+      if (el.status.dataset.s !== "listening" && el.status.dataset.s !== "reconnecting") setStatus("connecting");
+    } catch (e) {
+      running = false;
+      fastEnds++;
+      if (fastEnds >= 6) { stopListening("error"); showMsg("Não deu para ligar o microfone. Recarregue a página e tente de novo."); return; }
+      scheduleLaunch(500 * 2 ** (fastEnds - 1));
+    }
+  }
+
+  function startListening() {
+    if (!SR) return;
+    want = true; fastEnds = 0;
+    clearMsg();
+    el.live.dataset.fresh = "1";
+    setUI();
+    launch();
+    requestWake();
+  }
+  function stopListening(status) {
+    want = false;
+    clearTimeout(retryTimer);
+    if (rec && running) { try { rec.stop(); } catch (e) {} }
+    releaseWake();
+    setStatus(status || "paused");
+    setUI();
+  }
+
+  // ---------- Tela acesa enquanto a legenda roda ----------
+  let wake = null;
+  async function requestWake() {
+    try {
+      if (!wake && "wakeLock" in navigator && document.visibilityState === "visible") {
+        wake = await navigator.wakeLock.request("screen");
+        wake.addEventListener("release", () => { wake = null; });
+      }
+    } catch (e) { wake = null; }
+  }
+  function releaseWake() { try { if (wake) wake.release(); } catch (e) {} wake = null; }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && want) { requestWake(); if (!running) { fastEnds = 0; launch(); } }
+  });
+
+  // ---------- Botões ----------
+  el.toggle.addEventListener("click", () => { if (want) stopListening(); else startListening(); });
+  el.smaller.addEventListener("click", () => setScale(-0.15));
+  el.bigger.addEventListener("click", () => setScale(0.15));
+  el.theme.addEventListener("click", () => { prefs.theme = prefs.theme === "light" ? "dark" : "light"; applyPrefs(); });
+
+  if (document.fullscreenEnabled) {
+    el.fullscreen.addEventListener("click", async () => {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch (e) {}
+    });
+    document.addEventListener("fullscreenchange", () => {
+      el.fullscreen.textContent = document.fullscreenElement ? "Sair da tela cheia" : "Tela cheia";
+    });
+  } else {
+    el.fullscreen.hidden = true;
+  }
+
+  el.hist.addEventListener("scroll", () => { if (nearBottom()) el.jump.hidden = true; }, { passive: true });
+  el.jump.addEventListener("click", scrollToEnd);
+
+  function flash(btn, text) {
+    const original = btn.dataset.label || btn.textContent;
+    btn.dataset.label = original;
+    btn.textContent = text;
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  }
+  el.copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(transcript()); flash(el.copy, "Copiado!"); }
+    catch (e) { showMsg("Não deu para copiar. Use <b>Baixar .txt</b>."); }
+  });
+  el.download.addEventListener("click", () => {
+    const d = new Date(entries.length ? entries[0].t : Date.now());
+    const pad = (n) => String(n).padStart(2, "0");
+    const name = `legenda-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}h${pad(d.getMinutes())}.txt`;
+    const url = URL.createObjectURL(new Blob([transcript()], { type: "text/plain;charset=utf-8" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: name });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  let clearArmed = null;
+  el.clear.addEventListener("click", () => {
+    if (clearArmed) {
+      clearTimeout(clearArmed); clearArmed = null;
+      entries = []; interim = ""; store.del(KEY_HIST);
+      el.clear.textContent = "Apagar";
+      el.live.dataset.fresh = "";
+      renderHistory(); setUI();
+      return;
+    }
+    el.clear.textContent = "Toque de novo para apagar";
+    clearArmed = setTimeout(() => { clearArmed = null; el.clear.textContent = "Apagar"; }, 4000);
+  });
+
+  // ---------- Início ----------
+  function showDemoNotice() {
+    showMsg('Modo demonstração: as frases são simuladas, sem microfone. <a href="./">Usar o microfone de verdade</a>', "info");
+  }
+
+  applyPrefs();
+  renderHistory();
+  setStatus("idle");
+  setUI();
+
+  if (DEMO) {
+    el.demoLink.href = "./";
+    el.demoLink.textContent = "Usar o microfone";
+    showDemoNotice();
+  } else if (!SR) {
+    el.toggle.disabled = true;
+    showMsg('Este navegador não faz reconhecimento de fala. Abra no <b>Google Chrome</b> ou no <b>Microsoft Edge</b> (computador ou Android). Para ver como funciona, use a <a href="?demo">demonstração</a>.');
+  } else if (!window.isSecureContext) {
+    showMsg("A legenda só consegue usar o microfone em página segura (https). Abra pelo link do GitHub Pages.");
+  }
+})();
+</script>
+</body>
+</html>
