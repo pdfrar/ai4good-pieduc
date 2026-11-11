@@ -20,6 +20,7 @@ Transforma a fala do professor em legenda grande na tela, em tempo real, e guard
 | Chrome (computador e Android) | Sim, recomendado |
 | Edge (computador) | Sim |
 | Safari (Mac e iPhone) | Em parte: pode parar sozinho |
+| Brave, Opera, Vivaldi | Não: têm o recurso, mas sem acesso ao serviço de fala (erro "sem conexão") |
 | Firefox | Não tem reconhecimento de fala |
 
 A página precisa estar em https (o GitHub Pages já é) e pedir permissão do microfone. No Android, o Chrome toca um bipe a cada frase, porque lá a legenda é religada a cada frase para evitar texto repetido.

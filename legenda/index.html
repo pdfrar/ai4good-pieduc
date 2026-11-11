@@ -169,6 +169,10 @@
   const DEMO = params.has("demo");
   const LANG = "pt-BR";
   const IS_ANDROID = /Android/i.test(navigator.userAgent);
+  // Brave, Opera e Vivaldi expõem a API, mas não têm acesso ao serviço de fala do Google: sempre dá erro "network"
+  const NO_SPEECH_SERVICE = !!navigator.brave || /\bOPR\/|Vivaldi|YaBrowser/i.test(navigator.userAgent);
+  const WRONG_BROWSER_MSG = "Este navegador (Brave, Opera ou Vivaldi) não tem o serviço de reconhecimento de fala, então a legenda não conecta. " +
+    "Abra este link no <b>Microsoft Edge</b> ou no <b>Google Chrome</b>.";
   const KEY_HIST = DEMO ? "pieduc-legenda-demo" : "pieduc-legenda-historico";
   const KEY_PREFS = "pieduc-legenda-prefs";
   const MERGE_MS = 3000;     // trechos com menos de 3 s de pausa viram um só parágrafo no histórico
@@ -417,7 +421,9 @@
       fastEnds = quick ? fastEnds + 1 : 0;
       if (fastEnds >= 6) {
         stopListening("error");
-        showMsg("A legenda parou porque o reconhecimento de fala não está respondendo. Confira a internet e o microfone e toque em <b>Continuar legenda</b>.");
+        showMsg(NO_SPEECH_SERVICE ? WRONG_BROWSER_MSG :
+          "A legenda parou porque o reconhecimento de fala não está respondendo. Confira a internet e o microfone e toque em <b>Continuar legenda</b>. " +
+          "Se estiver usando Brave, Opera ou Vivaldi, abra no <b>Edge</b> ou no <b>Chrome</b>.");
         return;
       }
       if (fastEnds >= 2) setStatus("reconnecting");
@@ -446,6 +452,7 @@
         showMsg("Este navegador não reconhece fala em português. Use o Google Chrome.");
         return;
       case "network":
+        if (NO_SPEECH_SERVICE) { stopListening("error"); showMsg(WRONG_BROWSER_MSG); return; }
         showMsg("Sem conexão com o serviço de reconhecimento de fala. Tentando de novo…", "network");
         return;
       default:
@@ -583,6 +590,8 @@
   } else if (!SR) {
     el.toggle.disabled = true;
     showMsg('Este navegador não faz reconhecimento de fala. Abra no <b>Google Chrome</b> ou no <b>Microsoft Edge</b> (computador ou Android). Para ver como funciona, use a <a href="?demo">demonstração</a>.');
+  } else if (NO_SPEECH_SERVICE) {
+    showMsg(WRONG_BROWSER_MSG + ' Para ver como funciona aqui mesmo, use a <a href="?demo">demonstração</a>.');
   } else if (!window.isSecureContext) {
     showMsg("A legenda só consegue usar o microfone em página segura (https). Abra pelo link do GitHub Pages.");
   }
