@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulação do formulário — PIEDUC</title>
+<style>
+  :root { --roxo:#1b6b45; --fundo:#e8f0eb; --card:#fff; --texto:#202124; --sub:#5f6368; --borda:#dadce0; --erro:#d93025; --ok:#188038; --pend:#fef7e0; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--fundo); color:var(--texto); font:15px/1.5 Roboto, Arial, sans-serif; }
+  .wrap { max-width:770px; margin:12px auto 60px; padding:0 16px; }
+  .card { background:var(--card); border:1px solid var(--borda); border-radius:8px; padding:22px 24px; margin-bottom:12px; }
+  .topo { border-top:10px solid var(--roxo); }
+  .topo h1 { font-size:28px; font-weight:400; margin:0 0 10px; }
+  .topo p { margin:6px 0; color:var(--sub); }
+  .aviso { background:var(--pend); border-color:#f9e29c; font-size:14px; }
+  .secao { background:var(--roxo); color:#fff; border:none; padding:12px 24px; font-size:17px; border-radius:8px 8px 0 0; margin-bottom:0; }
+  .secao + .card { border-top-left-radius:0; border-top-right-radius:0; }
+  .q { font-size:16px; margin:0 0 4px; }
+  .q .ast { color:var(--erro); }
+  .ajuda { color:var(--sub); font-size:13px; margin:0 0 10px; }
+  textarea { width:100%; border:none; border-bottom:1px solid var(--borda); font:inherit; padding:8px 0; resize:vertical; min-height:60px; outline:none; background:transparent; color:inherit; }
+  textarea:focus { border-bottom:2px solid var(--roxo); }
+  .rodape { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:8px; font-size:13px; color:var(--sub); flex-wrap:wrap; }
+  .cont.estourou { color:var(--erro); font-weight:bold; }
+  .cont.ok { color:var(--ok); }
+  .pendente { color:#b06000; font-weight:bold; }
+  button { background:none; border:1px solid var(--borda); border-radius:4px; padding:5px 12px; font:inherit; font-size:13px; color:var(--roxo); cursor:pointer; }
+  button:hover { background:#f1f3f4; }
+  .acoes { display:flex; gap:8px; justify-content:space-between; flex-wrap:wrap; }
+  .falso { background:var(--roxo); color:#fff; border:none; padding:9px 24px; cursor:not-allowed; opacity:.6; }
+  mark { background:#fde293; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card topo">
+    <h1>Programa AI4Good — Brazil Conference 2027</h1>
+    <p><strong>Seção Específica: AI4Good</strong></p>
+    <p>O AI4Good visa gerar soluções que utilizem IA por meio de projetos open source, para resolver problemas reais da sociedade, promovendo impacto positivo de forma colaborativa e acessível. O tema deste ano é <em>IA que aproxima: unindo pessoas, eliminando barreiras e fortalecendo o pertencimento da sociedade brasileira</em>.</p>
+    <p style="color:var(--erro);font-size:13px">* Indica uma pergunta obrigatória</p>
+  </div>
+  <div class="card aviso">
+    <strong>Simulação local — não envia nada.</strong> Os textos são o rascunho do PIEDUC. Você pode editar aqui para testar; as edições ficam só neste navegador. O texto oficial continua no arquivo <code>Rascunho Formulario AI4Good - PIEDUC.md</code>.
+    Trechos <mark>[PREENCHER]</mark> e <mark>[SE FIZER]</mark> ainda precisam de decisão.
+  </div>
+  <div id="campos"></div>
+  <div class="acoes">
+    <button class="falso" disabled>Enviar</button>
+    <button id="restaurar">Restaurar textos do rascunho</button>
+  </div>
+</div>
+<script>
+const CAMPOS = [{"secao": "Dados pessoais (Descreva seu time)"}, {"q": "O que te motiva a participar do programa AI4Good?", "obrig": true, "limite": 1250, "texto": "O PIEDUC nasceu em 2023, no ensino médio da Escola SESI de Patos, no Sertão da Paraíba, como uma proposta de design thinking: queríamos que colegas com deficiência e neurodivergentes deixassem de estar apenas matriculados e passassem a fazer parte da aula. O projeto foi aprimorado para a Mostra de Iniciação Científica do SESI-PB, onde conquistou o 2º lugar na área de Educação. Já no curso de Ciência da Computação, demos continuidade a ele na disciplina de Metodologia Científica, com a escrita de um artigo.\n\nFoi na universidade que o problema deixou de ser teoria. Um colega surdo passou a dividir a sala conosco e, por questões burocráticas, ficou um período sem intérprete de Libras, contando apenas com o apoio de uma tutora estudante. Vimos de perto alguém presente na sala, mas sem acesso à aula, e percebemos que era exatamente isso que o PIEDUC poderia resolver. Foi o que nos fez retomar a pesquisa e o desenvolvimento.\n\nO tema \"IA que aproxima\" traduz o que queremos construir: IA que aproxima o aluno da aula, com legenda, Libras e conteúdo adaptado, e que aproxima o professor da tecnologia pelo WhatsApp, sem nada novo para aprender. O AI4Good é o passo que falta para levar o PIEDUC do protótipo à sala de aula."}, {"q": "Como você acredita que sua participação pode contribuir para o sucesso do programa e como o programa pode contribuir para o seu sucesso?", "obrig": true, "limite": 1250, "texto": "Trazemos um problema que vivemos de perto e um time que já entrega. Pedro desenvolve produtos de IA para escolas, um deles em uso por professores reais. Mariana cuida do design e da pesquisa com usuários. Temos acesso direto a quem importa: um estudante surdo e sua intérprete de Libras na UEPB, e escolas com neuropsicopedagogas para o piloto com alunos neurodivergentes. Podemos mostrar ao programa um caso de IA testada com as pessoas que ela quer incluir, vindo do interior do Nordeste. Todo o código será aberto, para que outras equipes, redes públicas e universidades reutilizem.\n\nO programa pode nos dar o que falta: mentoria em IA e produto para escolher bem os modelos e medir o impacto com rigor; feedback de especialistas sobre ética e privacidade com dados de estudantes; e conexões com empresas e redes de ensino para levar o PIEDUC do piloto para mais escolas. Ter um prazo, metas semanais e um Demo Day também é o ritmo de que precisamos para sair do protótipo e chegar a resultados concretos."}, {"secao": "Detalhes do Projeto"}, {"q": "Descreva o seu projeto em uma frase.", "obrig": true, "texto": "O PIEDUC usa IA para transformar a fala do professor em legenda, Libras, textos adaptados e um tutor socrático para cada aluno com deficiência ou neurodivergente, com o professor usando só o WhatsApp."}, {"q": "Explique qual é a questão ou problema social que o seu projeto pretende resolver. Detalhe como esse problema afeta as pessoas ou a comunidade e por que é importante abordá-lo.", "obrig": true, "limite": 1250, "texto": "O Brasil tem cerca de [PREENCHER: número do Censo Escolar mais recente] estudantes na educação especial, e a maioria estuda em classes comuns. Na prática, um aluno surdo, autista, com TDAH ou com deficiência intelectual assiste à mesma aula expositiva que os colegas, sem legenda, sem Libras e sem conteúdo adaptado. Ele perde parte da explicação e não tem como recuperá-la depois. A inclusão existe na matrícula, mas não na aprendizagem nem no pertencimento: esses alunos ficam para trás, se desmotivam e têm mais risco de evasão.\n\nDo outro lado está o professor, com 30 a 40 alunos, pouco tempo e, muitas vezes, pouco letramento digital. Adaptar cada aula para cada perfil é inviável, e ferramentas que exigem site novo, cadastro e treinamento são abandonadas. Profissionais de apoio e intérpretes são poucos, sobretudo na escola pública e no interior, como no Sertão da Paraíba, onde o projeto nasceu.\n\nÉ importante enfrentar isso porque a sala de aula é o primeiro lugar onde uma pessoa com deficiência deveria se sentir parte da sociedade. Sem apoio na aula, a exclusão começa cedo e se repete na vida adulta."}, {"q": "Considerando o problema abordado, qual sua proposta de solução? Como você utilizará inteligência artificial para resolver este problema?", "obrig": true, "texto": "O PIEDUC é uma plataforma open source em que o professor só fala e a IA adapta a aula para cada aluno.\n\n1. Durante a aula, reconhecimento de fala transforma a voz do professor em legenda ao vivo e numa transcrição da aula.\n2. A partir da transcrição, modelos de linguagem geram versões por perfil: texto simplificado com pictogramas (TEA e deficiência intelectual), resumo em tópicos curtos (TDAH) e texto traduzido para Libras com o VLibras (surdos), respeitando a Libras como primeira língua da comunidade surda.\n3. Depois da aula, um tutor socrático com IA conversa com o aluno sobre o conteúdo daquele dia. Ele não entrega respostas: faz perguntas que levam o aluno a raciocinar, na linguagem do seu perfil. Assim a IA apoia o estudo, em vez de virar cola, e o aluno aprende a questionar e verificar, em vez de aceitar respostas prontas, uma defesa básica contra a desinformação.\n4. O professor usa só o WhatsApp: manda um áudio com o resumo da aula, revisa o material e confirma com um \"SIM\" antes de os alunos receberem. Depois recebe um resumo de onde a turma travou nas conversas com o tutor.\n\nResponsabilidade: a IA propõe e o professor confirma; regras em código conferem as saídas; os alunos são identificados de forma anônima; não coletamos dados de saúde.\n\nJá temos legenda ao vivo funcionando e a cadeia de IA testada numa aula real [SE FIZER: e um primeiro teste com um estudante surdo e sua intérprete]. Na aceleração, vamos juntar tudo num app, ligar o WhatsApp e fazer um piloto numa escola."}, {"q": "Adicione links para materiais complementares (apresentações, fotos, vídeos, pesquisas, artigos, etc.) que podem nos ajudar a conhecer melhor o seu projeto.", "obrig": false, "texto": "- Repositório (código aberto): [PREENCHER: link do GitHub]\n- Telas do PIEDUC (Figma da Mariana): [PREENCHER]\n- Vídeo curto da legenda ao vivo funcionando (30–60 s): [SE FIZER, vale muito]\n- Resumo estendido de 2023 (MIC's SESI-PB): [PREENCHER: link do PDF no Drive, com acesso \"qualquer pessoa com o link\"]"}, {"secao": "Detalhes do time"}, {"q": "Descreva o seu time brevemente: quantas pessoas? Já trabalharam em outros projetos? Quais são as habilidades do time? Como pretendem dividir tarefas e responsabilidades?", "obrig": true, "ajuda": "Caso esteja se inscrevendo individualmente, nos conte sobre sua experiência com projetos e suas habilidades.", "texto": "Somos uma dupla que trabalha junta desde 2023, quando criamos o PIEDUC no ensino médio, na Escola SESI Dionísio Marques de Almeida, em Patos-PB, numa proposta de design thinking. O projeto ficou em 2º lugar na área de Educação na Mostra de Iniciação Científica do SESI Paraíba e depois virou um artigo na disciplina de Metodologia Científica do curso de Ciência da Computação.\n\n- Pedro Ferreira, estudante de Ciência da Computação na UEPB: desenvolve produtos de IA para escolas, entre eles um assistente de WhatsApp em uso por professores que transforma áudios sobre a aula em registros no sistema da escola. Habilidades: Python, APIs de IA (transcrição e modelos de linguagem), integração com WhatsApp e infraestrutura.\n- Mariana Alves, [PREENCHER: curso/instituição]: design de interfaces e pesquisa com usuários. Habilidades: [PREENCHER: ex. Figma, prototipagem, acessibilidade].\n\nDivisão: Pedro cuida da IA e da engenharia (legenda, cadeia de adaptação, tutor socrático, WhatsApp). Mariana cuida da experiência de alunos e professores (telas acessíveis, testes com usuários, piloto e apresentação). Decisões de produto são tomadas juntos.\n\nTemos o apoio da tradutora-intérprete de Libras de um estudante surdo da UEPB e acesso a escolas com neuropsicopedagogas para o piloto. Temos disponibilidade para as mentorias semanais e o Demo Day."}, {"q": "Insira o link para o LinkedIn do seu time", "obrig": true, "ajuda": "Copie e cole os links dos perfis do LinkedIn", "texto": "- Pedro: [PREENCHER]\n- Mariana: [PREENCHER]"}];
+const CHAVE = "pieduc-form-sim-v1";
+let salvos = {};
+try { salvos = JSON.parse(localStorage.getItem(CHAVE) || "{}"); } catch (e) { salvos = {}; }
+
+const raiz = document.getElementById("campos");
+let i = 0;
+for (const c of CAMPOS) {
+  if (c.secao) {
+    const s = document.createElement("div");
+    s.className = "card secao"; s.textContent = c.secao;
+    raiz.appendChild(s); continue;
+  }
+  const id = "c" + (i++);
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `<p class="q"></p>${c.ajuda ? '<p class="ajuda"></p>' : ""}${c.limite ? '<p class="ajuda">Limite de ' + c.limite + ' caracteres, sem espaço.</p>' : ""}
+    <textarea></textarea>
+    <div class="rodape"><span class="cont"></span><span class="pend"></span><button>Copiar</button></div>`;
+  card.querySelector(".q").innerHTML = "";
+  card.querySelector(".q").append(c.q);
+  if (c.obrig) { const a = document.createElement("span"); a.className = "ast"; a.textContent = " *"; card.querySelector(".q").append(a); }
+  if (c.ajuda) card.querySelector(".ajuda").textContent = c.ajuda;
+  const ta = card.querySelector("textarea");
+  ta.value = salvos[id] ?? c.texto;
+  const cont = card.querySelector(".cont"), pend = card.querySelector(".pend");
+  const atualizar = () => {
+    const n = ta.value.replace(/\s/g, "").length;
+    cont.textContent = c.limite ? `${n} / ${c.limite} caracteres sem espaço` : `${n} caracteres sem espaço`;
+    cont.className = "cont " + (c.limite ? (n > c.limite ? "estourou" : "ok") : "");
+    const p = (ta.value.match(/\[(PREENCHER|SE FIZER)[^\]]*\]/g) || []).length;
+    pend.textContent = p ? `${p} pendência(s)` : "";
+    pend.className = p ? "pendente" : "";
+    ta.style.height = "auto"; ta.style.height = (ta.scrollHeight + 4) + "px";
+  };
+  ta.addEventListener("input", () => {
+    atualizar();
+    salvos[id] = ta.value;
+    try { localStorage.setItem(CHAVE, JSON.stringify(salvos)); } catch (e) {}
+  });
+  card.querySelector("button").addEventListener("click", async (ev) => {
+    try { await navigator.clipboard.writeText(ta.value); ev.target.textContent = "Copiado!"; }
+    catch (e) { ta.select(); document.execCommand("copy"); ev.target.textContent = "Copiado!"; }
+    setTimeout(() => ev.target.textContent = "Copiar", 1500);
+  });
+  raiz.appendChild(card);
+  requestAnimationFrame(atualizar);
+}
+document.getElementById("restaurar").addEventListener("click", () => {
+  try { localStorage.removeItem(CHAVE); } catch (e) {}
+  location.reload();
+});
+</script>
+</body>
+</html>

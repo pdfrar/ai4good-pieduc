@@ -1,0 +1,319 @@
+<title>Reta Final PIEDUC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* Layout: uma coluna de cronograma, cabeçalho com contagem regressiva e progresso, dias como blocos datados com itens marcáveis. */
+  :root {
+    --bg: #f3f6f4;
+    --surface: #ffffff;
+    --fg: #17221d;
+    --muted: #5b6b63;
+    --line: #d7e0db;
+    --accent: #0f6b4f;
+    --accent-soft: #dcefe6;
+    --amber: #a85a00;
+    --amber-soft: #fbecd6;
+    --pedro: #2357a6;
+    --pedro-soft: #e1eaf8;
+    --mariana: #9a3b7a;
+    --mariana-soft: #f6e2ef;
+    --both: #4d5a53;
+    --both-soft: #e8ece9;
+    --done: #8a9890;
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1613; --surface: #17211c; --fg: #e6eee9; --muted: #9db0a6; --line: #2a3832;
+      --accent: #4fc79c; --accent-soft: #173a2d; --amber: #f0a64a; --amber-soft: #3b2a14;
+      --pedro: #8db3f0; --pedro-soft: #1c2b44; --mariana: #e59ccb; --mariana-soft: #3a1f31;
+      --both: #b8c6bf; --both-soft: #26312c; --done: #6d7c74; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1613; --surface: #17211c; --fg: #e6eee9; --muted: #9db0a6; --line: #2a3832;
+    --accent: #4fc79c; --accent-soft: #173a2d; --amber: #f0a64a; --amber-soft: #3b2a14;
+    --pedro: #8db3f0; --pedro-soft: #1c2b44; --mariana: #e59ccb; --mariana-soft: #3a1f31;
+    --both: #b8c6bf; --both-soft: #26312c; --done: #6d7c74; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.5; }
+  .wrap { max-width: 760px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+  header { display: grid; gap: 14px; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 6vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; }
+  .sub { margin: 0; color: var(--muted); max-width: 60ch; }
+  .stats { display: flex; flex-wrap: wrap; gap: 10px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 0; flex: 1 1 160px; }
+  .stat b { display: block; font-family: var(--font-display); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 13px; color: var(--muted); }
+  .stat.deadline b { color: var(--amber); }
+  .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filters .lbl { font-size: 13px; color: var(--muted); margin-right: 4px; }
+  .chipbtn { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 6px 12px; border-radius: 99px; cursor: pointer; }
+  .chipbtn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .chipbtn:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .notice { font-size: 14px; padding: 10px 14px; border-radius: 10px; background: var(--amber-soft); color: var(--fg); }
+  .day { display: grid; gap: 8px; }
+  .dayhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+  .dayhead h2 { font-family: var(--font-display); font-weight: 600; font-size: 21px; margin: 0; }
+  .dayhead .date { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; }
+  .dayhead .focus { color: var(--muted); font-size: 14px; }
+  .dayhead .count { margin-left: auto; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .badge { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; }
+  .badge.today { background: var(--accent); color: var(--bg); }
+  .badge.late { background: var(--amber-soft); color: var(--amber); }
+  .day.is-today .dayhead { border-bottom-color: var(--accent); }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  li label { display: grid; grid-template-columns: 24px 1fr; gap: 12px; padding: 12px 14px; cursor: pointer; align-items: start; }
+  li input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+  li .txt { min-width: 0; display: grid; gap: 4px; }
+  li .task { overflow-wrap: anywhere; }
+  li .meta { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 13px; color: var(--muted); }
+  li.done .task { color: var(--done); text-decoration: line-through; text-decoration-thickness: 1px; }
+  li.late-item { border-color: var(--amber); }
+  li.key .task { font-weight: 700; }
+  .who { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 99px; }
+  .who.pedro { background: var(--pedro-soft); color: var(--pedro); }
+  .who.mariana { background: var(--mariana-soft); color: var(--mariana); }
+  .who.both { background: var(--both-soft); color: var(--both); }
+  .doneby { display: inline-flex; align-items: center; gap: 6px; }
+  .doneby img { width: 18px; height: 18px; border-radius: 50%; }
+  input:disabled + .txt { opacity: .85; }
+  footer { font-size: 13px; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">AI4Good · Brazil Conference 2027</div>
+    <h1>Reta final do PIEDUC</h1>
+    <p class="sub">IA para uma sala inclusiva, para quem aprende e para quem ensina. Meta: enviar na quarta à noite; o formulário fecha na quinta, 12/11, às 23h59.</p>
+    <div class="stats">
+      <div class="stat deadline"><b id="countdown">—</b><span>até o prazo oficial (12/11, 23h59)</span></div>
+      <div class="stat"><b id="progress-num">0 de 0</b><span>tarefas feitas</span><div class="bar" aria-hidden="true"><i id="progress-bar"></i></div></div>
+    </div>
+    <div class="filters" role="group" aria-label="Filtrar por pessoa">
+      <span class="lbl">Mostrar:</span>
+      <button class="chipbtn" id="f-all" data-f="all" aria-pressed="true">Tudo</button>
+      <button class="chipbtn" id="f-pedro" data-f="pedro" aria-pressed="false">Pedro</button>
+      <button class="chipbtn" id="f-mariana" data-f="mariana" aria-pressed="false">Mariana</button>
+      <button class="chipbtn" id="f-open" data-f="open" aria-pressed="false">Só pendentes</button>
+    </div>
+    <div class="notice" id="notice" hidden></div>
+  </header>
+
+  <main id="days"></main>
+
+  <footer>As marcações ficam salvas e aparecem para os dois. Toque numa tarefa para marcar ou desmarcar.</footer>
+</div>
+
+<script>
+const DAYS = [
+  { key: "2026-11-08", nome: "Domingo", data: "08/11", foco: "falar com as pessoas", itens: [
+    { id: "d08-colega", who: "pedro", t: "Pedir ao colega surdo autorização para contar a história dele e marcar o teste (ter 10 ou qua 11 de manhã)", key: true },
+    { id: "d08-interprete", who: "pedro", t: "Convidar a intérprete para ser o apoio do projeto e participar do teste" },
+    { id: "d08-elegib", who: "both", t: "Confirmar elegibilidade: 18 anos até 31/12/2026 e nunca contemplados num programa da Brazil Conference" },
+    { id: "d08-aulio", who: "pedro", t: "Pedir à escola do Aulio autorização para citar o nome, ou decidir não citar" },
+    { id: "d08-repo", who: "pedro", t: "Criar o repositório público no GitHub" },
+  ]},
+  { key: "2026-11-09", nome: "Segunda", data: "09/11", foco: "legenda", itens: [
+    { id: "d09-legenda", who: "pedro", t: "Legenda ao vivo com Web Speech API, em tela única, com histórico", key: true },
+    { id: "d09-ui", who: "mariana", t: "Interface da legenda: letra grande, alto contraste, histórico rolável" },
+    { id: "d09-hist", who: "mariana", t: "Escrever o próprio histórico (curso, habilidades) para o formulário" },
+    { id: "d09-censo", who: "pedro", t: "Achar o número do Censo Escolar mais recente (matrículas na educação especial)" },
+  ]},
+  { key: "2026-11-10", nome: "Terça", data: "10/11", foco: "IA e telas", itens: [
+    { id: "d10-cadeia", who: "pedro", t: "Cadeia de IA numa transcrição real: texto adaptado por perfil + tutor socrático", key: true },
+    { id: "d10-figma", who: "mariana", t: "Telas no Figma: texto adaptado, tutor e WhatsApp do professor" },
+    { id: "d10-roteiro", who: "mariana", t: "Roteiro curto do teste: o que mostrar, o que perguntar, o que anotar" },
+    { id: "d10-teste", who: "both", t: "Teste com o colega e a intérprete, se der hoje" },
+  ]},
+  { key: "2026-11-11", nome: "Quarta", data: "11/11", foco: "fechar e enviar", itens: [
+    { id: "d11-teste", who: "both", t: "Teste com o colega e a intérprete, se não deu ontem; anotar 2 ou 3 achados" },
+    { id: "d11-readme", who: "pedro", t: "README com a regra de privacidade e código no repositório" },
+    { id: "d11-video", who: "both", t: "Gravar o vídeo de 30 a 60 s da legenda funcionando" },
+    { id: "d11-links", who: "both", t: "Links: GitHub, Figma, PDF de 2023 no Drive (acesso por link), LinkedIn dos dois" },
+    { id: "d11-textos", who: "both", t: "Preencher os [PREENCHER] e tirar ou reescrever os [SE FIZER] que não aconteceram" },
+    { id: "d11-revisar", who: "both", t: "Revisar na simulação e conferir os limites de caracteres" },
+    { id: "d11-enviar", who: "both", t: "Enviar o formulário à noite", key: true },
+  ]},
+  { key: "2026-11-12", nome: "Quinta", data: "12/11", foco: "folga", itens: [
+    { id: "d12-email", who: "both", t: "Conferir o e-mail de confirmação (olhar o spam); se algo deu errado, ainda dá tempo até 23h59" },
+  ]},
+  { key: "depois", nome: "Depois do envio", data: "", foco: "", itens: [
+    { id: "dx-preselecao", who: "both", t: "Acompanhar o e-mail ai4good@brazilconference.org: a pré-seleção dá 1 dia para confirmar a entrevista" },
+    { id: "dx-entrevista", who: "both", t: "Preparar a entrevista (20 a 22/11): história, divisão de tarefas, disponibilidade, estágio do projeto" },
+  ]},
+];
+const WHO = { pedro: "Pedro", mariana: "Mariana", both: "Os dois" };
+const DEADLINE = new Date("2026-11-12T23:59:00-03:00");
+
+let state = {};          // id -> {feito, por, em}
+let filter = "all";
+let canWrite = true;
+let db = null, user = null, localMode = false;
+const LS = "pieduc-checklist-local";
+
+try { filter = localStorage.getItem("pieduc-filter") || "all"; } catch (e) {}
+
+function todayKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Fortaleza", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const g = (t) => parts.find(p => p.type === t).value;
+  return `${g("year")}-${g("month")}-${g("day")}`;
+}
+
+function showNotice(msg) {
+  const n = document.getElementById("notice");
+  n.textContent = msg || "";
+  n.hidden = !msg;
+}
+
+function tickCountdown() {
+  const ms = DEADLINE - new Date();
+  const el = document.getElementById("countdown");
+  if (ms <= 0) { el.textContent = "Encerrado"; return; }
+  const d = Math.floor(ms / 86400000), h = Math.floor(ms % 86400000 / 3600000), m = Math.floor(ms % 3600000 / 60000);
+  el.textContent = d > 0 ? `${d}d ${h}h ${m}min` : `${h}h ${m}min`;
+}
+
+async function render() {
+  const root = document.getElementById("days");
+  const tk = todayKey();
+  const ids = [...new Set(Object.values(state).map(s => s && s.por).filter(Boolean))];
+  let profiles = {};
+  if (user && ids.length) { try { profiles = await user.profiles(ids); } catch (e) {} }
+
+  let total = 0, done = 0;
+  const frag = document.createDocumentFragment();
+  for (const day of DAYS) {
+    const past = day.key !== "depois" && day.key < tk;
+    const isToday = day.key === tk;
+    const items = day.itens.filter(it => {
+      const f = state[it.id]?.feito;
+      if (filter === "pedro") return it.who === "pedro" || it.who === "both";
+      if (filter === "mariana") return it.who === "mariana" || it.who === "both";
+      if (filter === "open") return !f;
+      return true;
+    });
+    day.itens.forEach(it => { total++; if (state[it.id]?.feito) done++; });
+    if (!items.length) continue;
+
+    const sec = document.createElement("section");
+    sec.className = "day" + (isToday ? " is-today" : "");
+    const head = document.createElement("div");
+    head.className = "dayhead";
+    const h2 = document.createElement("h2"); h2.textContent = day.nome; head.append(h2);
+    if (day.data) { const s = document.createElement("span"); s.className = "date"; s.textContent = day.data; head.append(s); }
+    if (day.foco) { const s = document.createElement("span"); s.className = "focus"; s.textContent = "· " + day.foco; head.append(s); }
+    const pend = day.itens.filter(it => !state[it.id]?.feito).length;
+    if (isToday) { const b = document.createElement("span"); b.className = "badge today"; b.textContent = "Hoje"; head.append(b); }
+    else if (past && pend) { const b = document.createElement("span"); b.className = "badge late"; b.textContent = pend + " atrasada" + (pend > 1 ? "s" : ""); head.append(b); }
+    const c = document.createElement("span"); c.className = "count";
+    c.textContent = `${day.itens.length - pend}/${day.itens.length}`; head.append(c);
+    sec.append(head);
+
+    const ul = document.createElement("ul");
+    for (const it of items) {
+      const st = state[it.id] || {};
+      const li = document.createElement("li");
+      li.className = (st.feito ? "done" : "") + (past && !st.feito ? " late-item" : "") + (it.key ? " key" : "");
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox"; cb.id = "cb-" + it.id; cb.checked = !!st.feito; cb.disabled = !canWrite;
+      cb.addEventListener("change", () => toggle(it.id, cb.checked, cb));
+      const txt = document.createElement("div"); txt.className = "txt";
+      const task = document.createElement("span"); task.className = "task"; task.textContent = it.t;
+      const meta = document.createElement("div"); meta.className = "meta";
+      const who = document.createElement("span"); who.className = "who " + it.who; who.textContent = WHO[it.who];
+      meta.append(who);
+      if (st.feito && st.por && profiles[st.por]) {
+        const p = profiles[st.por];
+        const db_ = document.createElement("span"); db_.className = "doneby";
+        const img = document.createElement("img"); img.src = p.avatarUrl; img.alt = "";
+        const nm = document.createElement("span");
+        let when = "";
+        if (st.em) { try { when = " em " + new Date(st.em).toLocaleString("pt-BR", { timeZone: "America/Fortaleza", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch (e) {} }
+        nm.textContent = "feito por " + (p.isMe ? "você" : (p.name || "alguém")) + when;
+        db_.append(img, nm); meta.append(db_);
+      }
+      txt.append(task, meta);
+      label.append(cb, txt);
+      li.append(label);
+      ul.append(li);
+    }
+    sec.append(ul);
+    frag.append(sec);
+  }
+  root.replaceChildren(frag);
+  document.getElementById("progress-num").textContent = `${done} de ${total}`;
+  document.getElementById("progress-bar").style.width = total ? (100 * done / total) + "%" : "0";
+}
+
+async function toggle(id, feito, cb) {
+  if (localMode || !db) {
+    state[id] = { feito, por: null, em: new Date().toISOString() };
+    try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {}
+    render(); return;
+  }
+  cb.disabled = true;
+  const myId = user ? await user.id() : null;
+  try {
+    await db.doc("itens/" + id).set({ feito, por: myId, em: new Date().toISOString() });
+  } catch (e) {
+    cb.checked = !feito;
+    if (e && e.code === "invalid_argument") { canWrite = false; showNotice("Você pode ver a lista, mas não marcar. Peça ao Pedro acesso de editor."); }
+    else showNotice("Não deu para salvar agora. Tente de novo em instantes.");
+  } finally {
+    cb.disabled = !canWrite;
+  }
+}
+
+function setFilter(f) {
+  filter = f;
+  try { localStorage.setItem("pieduc-filter", f); } catch (e) {}
+  document.querySelectorAll(".chipbtn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === f)));
+  render();
+}
+document.querySelectorAll(".chipbtn").forEach(b => b.addEventListener("click", () => setFilter(b.dataset.f)));
+document.querySelectorAll(".chipbtn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
+
+tickCountdown(); setInterval(tickCountdown, 30000);
+render();
+
+(async () => {
+  const c = window.claude;
+  if (!c || !c.use) { startLocal(); return; }
+  [db, user] = await Promise.all([c.use("db"), c.use("user")]);
+  if (!db) { startLocal(); return; }
+  if (user) {
+    const w = await user.can("data.write");
+    if (w === false) { canWrite = false; showNotice("Você pode ver a lista, mas não marcar. Peça ao Pedro acesso de editor."); }
+  }
+  let loaded = false;
+  const timer = setTimeout(() => { if (!loaded) showNotice("Ainda carregando as marcações salvas…"); }, 10000);
+  db.collection("itens").onSnapshot(snap => {
+    const next = {};
+    snap.docs.forEach(d => { if (d.exists) next[d.id] = d.data(); });
+    state = next;
+    if (!snap.metadata.fromCache) { loaded = true; clearTimeout(timer); showNotice(canWrite ? "" : document.getElementById("notice").textContent); }
+    render();
+  }, err => {
+    clearTimeout(timer);
+    showNotice("As marcações compartilhadas não estão disponíveis agora. Recarregue a página mais tarde.");
+  });
+})();
+
+function startLocal() {
+  localMode = true;
+  try { state = JSON.parse(localStorage.getItem(LS) || "{}"); } catch (e) { state = {}; }
+  showNotice("Modo local: as marcações ficam só neste navegador.");
+  render();
+}
+</script>
