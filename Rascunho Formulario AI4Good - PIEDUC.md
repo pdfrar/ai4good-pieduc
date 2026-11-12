@@ -75,8 +75,8 @@ Já temos a legenda ao vivo publicada e funcionando [SE FIZER: e testada com um 
 
 Somos uma dupla que trabalha junta desde 2023, quando criamos o PIEDUC no ensino médio, na Escola SESI Dionísio Marques de Almeida, em Patos-PB, numa proposta de design thinking. O projeto ficou em 2º lugar na área de Educação na Mostra de Iniciação Científica do SESI Paraíba e depois virou um artigo na disciplina de Metodologia Científica do curso de Ciência da Computação.
 
-- Pedro Ferreira, estudante de Ciência da Computação na UEPB: desenvolve produtos de IA para escolas, entre eles um assistente de WhatsApp em uso por professores que transforma áudios sobre a aula em registros no sistema da escola. Habilidades: Python, APIs de IA (transcrição e modelos de linguagem), integração com WhatsApp e infraestrutura.
-- Mariana Alves, [PREENCHER: curso/instituição]: design de interfaces e pesquisa com usuários. Habilidades: [PREENCHER: ex. Figma, prototipagem, acessibilidade].
+- Pedro Ferreira, estudante do 6º período de Ciência da Computação na UEPB: desenvolve produtos de IA para escolas, entre eles um assistente de WhatsApp em uso por professores que transforma áudios sobre a aula em registros no sistema da escola. Habilidades: Python, APIs de IA (transcrição e modelos de linguagem), integração com WhatsApp e infraestrutura.
+- Mariana Alves, estudante do 6º período de Ciência da Computação na UEPB: design de interfaces e pesquisa com usuários. Habilidades: [PREENCHER: ex. Figma, prototipagem, acessibilidade].
 
 Divisão: Pedro cuida da IA e da engenharia (legenda, kit do intérprete, glossário e WhatsApp). Mariana cuida da experiência de estudantes, intérpretes e professores (telas acessíveis, testes com usuários surdos, piloto e apresentação). Decisões de produto são tomadas juntos.
 

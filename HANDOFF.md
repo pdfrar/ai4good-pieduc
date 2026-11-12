@@ -38,13 +38,12 @@ Também existem, fora do repositório (documentos privados no claude.ai): o arti
    - `[SE ACEITAR]` / `[SEM ACEITE]`: manter um, apagar o outro.
    - `[SE FIZER]`: manter só se o teste aconteceu; senão, apagar.
    - `[SE HOUVER]`: frase do coordenador.
-   - `[PREENCHER]`: curso e habilidades da Mariana, LinkedIns, link do PDF de 2023 no Drive.
+   - `[PREENCHER]`: habilidades da Mariana, LinkedIns, link do PDF de 2023 no Drive.
    - Figma: só entra se mostrar o novo foco.
 5. **Enviar até 20h** e conferir o e-mail de confirmação.
 
 ### Depois
 
-- Preencher curso e instituição da Mariana no artigo e regenerar o PDF.
 - Entrevistas dos pré-selecionados: 20 a 22/11/2026.
 
 ## Números usados (INEP)
