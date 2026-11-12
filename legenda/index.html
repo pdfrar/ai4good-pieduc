@@ -73,6 +73,16 @@
     border: 2px solid var(--line); border-radius: 14px; background: var(--surface);
   }
   .live.on { border-color: var(--accent); }
+  .live.on[data-stale="1"] { border-color: var(--warn); border-style: dashed; }
+
+  /* Aviso de "nada captado": quem é surdo não percebe sozinho que a legenda parou */
+  .stale {
+    flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px;
+    border: 3px solid var(--warn); background: var(--surface); font-weight: 700;
+    font-size: calc(clamp(17px, 2vw, 24px) * var(--scale)); line-height: 1.3;
+  }
+  .stale b { font-size: 1.6em; line-height: 1; color: var(--warn); }
+  .stale small { display: block; font-weight: 400; color: var(--muted); font-size: .8em; }
   .live p { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
   .live.on, .live[data-fresh="1"] {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.1em);
@@ -134,6 +144,7 @@
 <div class="msg-wrap gutter"><div class="msg" id="msg" role="alert" hidden></div></div>
 
 <main class="gutter">
+  <div class="stale" id="stale" role="status" hidden><b aria-hidden="true">!</b><span id="stale-text"></span></div>
   <section class="live" id="live" aria-hidden="true"><p id="live-text"></p></section>
 
   <section class="hist-wrap" aria-labelledby="hist-title">
@@ -178,6 +189,7 @@
   const MERGE_MS = 3000;     // trechos com menos de 3 s de pausa viram um só parágrafo no histórico
   const MERGE_MAX = 240;     // ...até esse tamanho
   const LIVE_CHARS = 400;    // quanto texto recente a legenda grande recebe (o excesso some por cima)
+  const STALE_MS = 15000;    // sem nenhum texto por esse tempo, avisa na tela que nada está sendo captado
 
   const store = {
     get(k, fallback) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } },
@@ -246,7 +258,7 @@
   // ---------- Elementos ----------
   const el = {
     toggle: $("#toggle"), status: $("#status"), statusText: $("#status span"), msg: $("#msg"),
-    live: $("#live"), liveText: $("#live-text"),
+    live: $("#live"), liveText: $("#live-text"), stale: $("#stale"), staleText: $("#stale-text"),
     hist: $("#hist"), empty: $("#empty"), count: $("#count"), jump: $("#jump"),
     copy: $("#copy"), download: $("#download"), clear: $("#clear"),
     smaller: $("#smaller"), bigger: $("#bigger"), theme: $("#theme"), fullscreen: $("#fullscreen"),
@@ -262,6 +274,7 @@
   let running = false;      // o reconhecedor atual está ativo
   let startedAt = 0, gotResult = false, fastEnds = 0, retryTimer = null;
   let msgKind = "";
+  let lastHeard = 0, staleTimer = null; // quando chegou o último texto (parcial ou final)
 
   // ---------- Preferências (letra e tema) ----------
   const prefs = Object.assign({ scale: 1, theme: null }, store.get(KEY_PREFS, {}));
@@ -391,19 +404,32 @@
     const r = new SR();
     r.lang = LANG;
     r.interimResults = true;
-    r.continuous = !IS_ANDROID;   // no Android, o modo contínuo repete frases; lá reiniciamos a cada frase
+    // Contínuo em todos os aparelhos. Antes, no Android, religávamos a cada frase, e o Chrome tocava um bipe
+    // a cada religada: o estudante surdo não ouve, mas a turma inteira ouve. O Android reenvia frases já
+    // finalizadas no modo contínuo; os filtros abaixo (índice já usado e prefixo repetido) evitam texto duplicado.
+    r.continuous = true;
     r.maxAlternatives = 1;
+    const doneIdx = new Set();
+    let lastFinal = "";
 
     r.onstart = () => { if (r === rec) setStatus("listening"); };
     r.onresult = (e) => {
       let im = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      for (let i = IS_ANDROID ? 0 : e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i];
-        const tx = res && res[0] ? res[0].transcript : "";
-        if (res.isFinal) addFinal(tx); else im += tx;
+        let tx = res && res[0] ? res[0].transcript : "";
+        if (res.isFinal) {
+          if (doneIdx.has(i)) continue;
+          doneIdx.add(i);
+          const full = clean(tx);
+          if (IS_ANDROID && lastFinal && full.toLowerCase().startsWith(lastFinal.toLowerCase())) tx = full.slice(lastFinal.length);
+          if (full) lastFinal = full;
+          addFinal(tx);
+        } else if (i >= e.resultIndex) im += tx;
       }
       if (r === rec) {
         gotResult = true; fastEnds = 0;
+        lastHeard = Date.now();
         interim = clean(im);
         clearMsg("network");
         if (want) setStatus("listening");
@@ -482,9 +508,29 @@
     }
   }
 
+  // ---------- Aviso de "nada captado" ----------
+  // Silêncio do professor e microfone que não capta parecem iguais para quem não ouve. Depois de STALE_MS sem
+  // nenhum texto, a tela diz isso com todas as letras, em vez de continuar mostrando "Ouvindo".
+  function checkStale() {
+    const s = el.status.dataset.s;
+    let text = "";
+    if (want && (s === "reconnecting" || s === "connecting") && Date.now() - lastHeard >= 5000) {
+      text = "Legenda reconectando: o que for dito agora pode não aparecer.";
+    } else if (want && Date.now() - lastHeard >= STALE_MS) {
+      const secs = Math.floor((Date.now() - lastHeard) / 1000);
+      const ago = secs < 60 ? `${secs} s` : `${Math.floor(secs / 60)} min`;
+      text = `Nada captado há ${ago}.<small>Pode ser silêncio, ou o microfone não está ouvindo. Na dúvida, peça para o professor falar algo.</small>`;
+    }
+    el.stale.hidden = !text;
+    if (text && el.staleText.innerHTML !== text) el.staleText.innerHTML = text;
+    if (text) el.live.dataset.stale = "1"; else delete el.live.dataset.stale;
+  }
+
   function startListening() {
     if (!SR) return;
     want = true; fastEnds = 0;
+    lastHeard = Date.now();
+    clearInterval(staleTimer); staleTimer = setInterval(checkStale, 1000);
     clearMsg();
     el.live.dataset.fresh = "1";
     setUI();
@@ -493,6 +539,7 @@
   }
   function stopListening(status) {
     want = false;
+    clearInterval(staleTimer); staleTimer = null; checkStale();
     clearTimeout(retryTimer);
     if (rec && running) { try { rec.stop(); } catch (e) {} }
     releaseWake();

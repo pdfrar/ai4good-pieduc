@@ -12,6 +12,7 @@ Transforma a fala do professor em legenda grande na tela, em tempo real, e guard
 - **Leitura:** letra ajustável (A− / A+), fundo escuro ou claro em alto contraste, tela cheia para projetar e tela sempre acesa enquanto a legenda roda.
 - **Depois da aula:** "Copiar" ou "Baixar .txt" exporta a transcrição com horários, que é a entrada da cadeia de IA (texto adaptado por perfil e tutor socrático).
 - Religa sozinha quando o navegador encerra o reconhecimento (silêncio longo, troca de rede, tela apagada).
+- Avisa na tela quando nada está sendo captado, porque quem é surdo não percebe sozinho que a legenda parou.
 
 ## Navegadores
 
@@ -23,7 +24,11 @@ Transforma a fala do professor em legenda grande na tela, em tempo real, e guard
 | Brave, Opera, Vivaldi | Não: têm o recurso, mas sem acesso ao serviço de fala (erro "sem conexão") |
 | Firefox | Não tem reconhecimento de fala |
 
-A página precisa estar em https (o GitHub Pages já é) e pedir permissão do microfone. No Android, o Chrome toca um bipe a cada frase, porque lá a legenda é religada a cada frase para evitar texto repetido.
+A página precisa estar em https (o GitHub Pages já é) e pedir permissão do microfone. No Android, a legenda roda em modo contínuo, para o Chrome não tocar um bipe a cada frase (a turma ouviria). O Chrome pode reenviar frases já finalizadas nesse modo; o código filtra as repetidas.
+
+## Aviso de "nada captado"
+
+Para quem é surdo, o silêncio do professor e um microfone que não capta nada parecem iguais. Por isso, se a legenda passar 15 s sem receber texto, aparece um aviso grande acima dela ("Nada captado há 20 s...") e a borda fica tracejada. Se o reconhecimento estiver reconectando, o aviso diz que a fala daquele momento pode não aparecer.
 
 ## Privacidade
 
