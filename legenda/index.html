@@ -14,14 +14,14 @@
      e, abaixo, o histórico da aula com horário, que ocupa o resto da tela e rola por dentro. */
   :root {
     --bg: #000; --surface: #121212; --fg: #fff; --muted: #c9c9c9; --line: #3d3d3d;
-    --accent: #ffd400; --accent-fg: #000; --ok: #3ddc84; --warn: #ffb020; --err: #ff6b6b;
+    --accent: #b99cff; --accent-fg: #000; --ok: #3ddc84; --warn: #ffb020; --err: #ff6b6b;
     --scale: 1;
     --font: "Atkinson Hyperlegible", system-ui, "Segoe UI", Roboto, sans-serif;
     color-scheme: dark;
   }
   :root[data-theme="light"] {
     --bg: #fff; --surface: #f1f1f1; --fg: #000; --muted: #3b3b3b; --line: #b9b9b9;
-    --accent: #0038a8; --accent-fg: #fff; --ok: #0a7a3d; --warn: #8a5a00; --err: #b00020;
+    --accent: #6b3fd4; --accent-fg: #fff; --ok: #0a7a3d; --warn: #8a5a00; --err: #b00020;
     color-scheme: light;
   }
   * { box-sizing: border-box; }
@@ -36,9 +36,9 @@
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
 
-  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .bar { border-top: 6px solid var(--accent); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; min-width: 0; }
-  .brand b { font-size: 20px; letter-spacing: .02em; }
+  .brand b { font-size: 20px; letter-spacing: .02em; color: var(--accent); }
   .brand span { color: var(--muted); }
   .status { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); white-space: nowrap; }
   .status i { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
