@@ -7,12 +7,28 @@ Transforma a fala do professor em legenda grande na tela, em tempo real, e guard
 
 ## Como funciona
 
-- Usa a [Web Speech API](https://developer.mozilla.org/docs/Web/API/SpeechRecognition) do navegador, em português (pt-BR). É um arquivo só (`index.html`), sem servidor e sem dependências.
+- Usa a [Web Speech API](https://developer.mozilla.org/docs/Web/API/SpeechRecognition) do navegador, em português (pt-BR). A tela do professor é `index.html` e a do aluno é `aluno.html`, com o visual em `estilo.css`. Não há servidor do PIEDUC.
 - **Tela única:** a legenda grande mostra as últimas linhas faladas; abaixo fica o histórico da aula, que rola e mantém a posição se o aluno voltar para reler.
 - **Leitura:** letra ajustável (A− / A+), fundo escuro ou claro em alto contraste, tela cheia para projetar e tela sempre acesa enquanto a legenda roda.
 - **Depois da aula:** "Copiar" ou "Baixar .txt" exporta a transcrição com horários, que é a entrada da cadeia de IA (texto adaptado por perfil e tutor socrático).
 - Religa sozinha quando o navegador encerra o reconhecimento (silêncio longo, troca de rede, tela apagada).
 - Avisa na tela quando nada está sendo captado, porque quem é surdo não percebe sozinho que a legenda parou.
+
+## Transmitir para o celular do aluno
+
+O notebook do professor faz a legenda e transmite; o celular do aluno só recebe.
+
+1. **Notebook do professor** (Chrome ou Edge): abra https://pdfrar.github.io/ai4good-pieduc/legenda/, toque em **Transmitir para o aluno** e depois em **Começar legenda**.
+2. **Celular do aluno** (Chrome): escaneie o QR code que aparece no notebook, ou abra https://pdfrar.github.io/ai4good-pieduc/legenda/aluno.html e digite o código da sala.
+3. O notebook mostra "Celular do aluno conectado". No celular, o status fica "Ao vivo".
+
+Como funciona:
+
+- Conexão direta entre os aparelhos (WebRTC, com [PeerJS](https://peerjs.com/)). O servidor público do PeerJS só apresenta um aparelho ao outro; o texto vai direto do notebook para o celular.
+- O código da sala fica salvo no notebook: se a página recarregar, a transmissão volta sozinha com o mesmo código, e o celular reconecta.
+- O celular do aluno avisa (com aviso grande e vibração) quando a conexão cai, quando a legenda do professor está pausada e quando o microfone do professor passa 15 s sem captar nada.
+- O histórico também fica salvo no celular do aluno, para reler depois.
+- Se a conexão não abrir (algumas redes de universidade bloqueiam conexão entre aparelhos), coloque o notebook e o celular na mesma rede, por exemplo o roteador de um celular.
 
 ## Navegadores
 

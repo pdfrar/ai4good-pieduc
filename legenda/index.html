@@ -9,131 +9,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
-<style>
-  /* Tela única: barra de controles no topo, legenda grande (3 linhas que rolam sozinhas)
-     e, abaixo, o histórico da aula com horário, que ocupa o resto da tela e rola por dentro. */
-  :root {
-    --bg: #000; --surface: #121212; --fg: #fff; --muted: #c9c9c9; --line: #3d3d3d;
-    --accent: #b99cff; --accent-fg: #000; --ok: #3ddc84; --warn: #ffb020; --err: #ff6b6b;
-    --scale: 1;
-    --font: "Atkinson Hyperlegible", system-ui, "Segoe UI", Roboto, sans-serif;
-    color-scheme: dark;
-  }
-  :root[data-theme="light"] {
-    --bg: #fff; --surface: #f1f1f1; --fg: #000; --muted: #3b3b3b; --line: #b9b9b9;
-    --accent: #6b3fd4; --accent-fg: #fff; --ok: #0a7a3d; --warn: #8a5a00; --err: #b00020;
-    color-scheme: light;
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font);
-    font-size: 16px; line-height: 1.45;
-    display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden;
-  }
-  .gutter {
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-  }
-
-  .bar { border-top: 6px solid var(--accent); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-  .brand { display: flex; align-items: baseline; gap: 8px; margin-right: auto; min-width: 0; }
-  .brand b { font-size: 20px; letter-spacing: .02em; color: var(--accent); }
-  .brand span { color: var(--muted); }
-  .status { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); white-space: nowrap; }
-  .status i { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
-  .status[data-s="listening"] i { background: var(--ok); animation: pulse 1.4s ease-in-out infinite; }
-  .status[data-s="connecting"] i, .status[data-s="reconnecting"] i { background: var(--warn); }
-  .status[data-s="error"] i { background: var(--err); }
-  @keyframes pulse { 50% { opacity: .3; } }
-  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
-
-  button {
-    font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 14px;
-    border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer;
-  }
-  button:hover:not(:disabled) { border-color: var(--fg); }
-  button:focus-visible, a:focus-visible, .hist:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  .primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-size: 17px; padding: 0 20px; }
-  .primary:hover:not(:disabled) { border-color: var(--accent); filter: brightness(1.08); }
-  .primary.on { background: transparent; color: var(--fg); }
-
-  .msg { margin: 12px 0 0; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--warn); }
-  .msg.info { border-color: var(--line); }
-  .msg a { color: inherit; font-weight: 700; }
-  .msg-wrap { flex: none; }
-
-  main { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 12px; padding-bottom: 8px; }
-
-  .live {
-    flex: none; font-size: calc(clamp(26px, 4.6vw, 60px) * var(--scale)); line-height: 1.25; font-weight: 700;
-    height: min(calc(3.75em + 28px), 50dvh); padding: 14px 18px; overflow: hidden;
-    display: flex; flex-direction: column; justify-content: flex-end;
-    border: 2px solid var(--line); border-radius: 14px; background: var(--surface);
-  }
-  .live.on { border-color: var(--accent); }
-  .live.on[data-stale="1"] { border-color: var(--warn); border-style: dashed; }
-
-  /* Aviso de "nada captado": quem é surdo não percebe sozinho que a legenda parou */
-  .stale {
-    flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px;
-    border: 3px solid var(--warn); background: var(--surface); font-weight: 700;
-    font-size: calc(clamp(17px, 2vw, 24px) * var(--scale)); line-height: 1.3;
-  }
-  .stale[hidden] { display: none; }
-  .stale b { font-size: 1.6em; line-height: 1; color: var(--warn); }
-  .stale small { display: block; font-weight: 400; color: var(--muted); font-size: .8em; }
-  .live p { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
-  .live.on, .live[data-fresh="1"] {
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.1em);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 1.1em);
-  }
-  .live .interim { color: var(--muted); }
-  .live .placeholder { color: var(--muted); font-weight: 400; font-size: max(18px, .55em); }
-
-  .hist-wrap { flex: 1; min-height: 140px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; position: relative; overflow: hidden; }
-  .hist-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px 8px 16px; border-bottom: 1px solid var(--line); }
-  .hist-head h2 { font-size: 16px; margin: 0 auto 0 0; }
-  .hist-head h2 small { color: var(--muted); font-weight: 400; font-size: 14px; }
-  .hist-head button { min-height: 40px; font-size: 14px; }
-  .empty { margin: 0; padding: 16px; color: var(--muted); }
-  .hist {
-    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0; padding: 4px 16px 72px; list-style: none;
-    font-size: calc(clamp(18px, 1.9vw, 24px) * var(--scale));
-  }
-  .hist li { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; padding: 8px 0; border-bottom: 1px solid var(--line); }
-  .hist li:last-child { border-bottom: 0; }
-  .hist time { font-size: max(13px, .6em); color: var(--muted); font-variant-numeric: tabular-nums; padding-top: .35em; }
-  .hist p { margin: 0; overflow-wrap: anywhere; }
-  .jump { position: absolute; right: 14px; bottom: 14px; background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
-
-  footer { flex: none; padding-top: 2px; padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)); font-size: 13px; color: var(--muted); }
-  footer a { color: inherit; }
-  footer summary { cursor: pointer; padding: 4px 0; width: fit-content; }
-  footer details p { margin: 2px 0 4px; max-width: 90ch; }
-  :fullscreen footer { display: none; }
-
-  @media (max-width: 600px) {
-    .brand span, .hide-sm { display: none; }
-    .bar { gap: 8px; }
-    .tools { gap: 6px; }
-    .tools button { padding: 0 10px; min-height: 40px; }
-    .primary { flex: 1 1 100%; order: 5; }
-    main { gap: 8px; padding-top: 8px; }
-    .hist-head { padding: 6px 8px 6px 12px; gap: 6px; }
-    .hist-head button { padding: 0 9px; }
-    .hist { padding: 2px 12px 64px; }
-    .hist li { gap: 2px 10px; padding: 6px 0; }
-  }
-  @media (prefers-reduced-motion: reduce) { .status i { animation: none !important; } }
-</style>
+<link rel="stylesheet" href="estilo.css">
 </head>
 <body>
 <header class="bar gutter">
   <div class="brand"><b>PIEDUC</b><span>Legenda ao vivo</span></div>
   <div class="status" id="status" data-s="idle" role="status"><i aria-hidden="true"></i><span>Parado</span></div>
   <button class="primary" id="toggle" type="button">Começar legenda</button>
+  <button id="share" type="button">Transmitir para o aluno</button>
   <div class="tools" role="group" aria-label="Ajustes de leitura">
     <button id="smaller" type="button" aria-label="Diminuir letra">A−</button>
     <button id="bigger" type="button" aria-label="Aumentar letra">A+</button>
@@ -143,6 +26,18 @@
 </header>
 
 <div class="msg-wrap gutter"><div class="msg" id="msg" role="alert" hidden></div></div>
+
+<div class="msg-wrap gutter">
+  <section class="share" id="share-panel" hidden aria-label="Transmissão para o celular do aluno">
+    <div class="qr" id="qr" aria-hidden="true"></div>
+    <div class="share-info">
+      <p class="share-state" id="share-state" data-s="wait" role="status">Preparando…</p>
+      <p>No celular do aluno, escaneie o QR code ou abra:<br><a id="share-link" target="_blank" rel="noopener"></a></p>
+      <p>Código da sala: <b class="code" id="share-code"></b></p>
+    </div>
+    <button id="share-hide" type="button">Esconder</button>
+  </section>
+</div>
 
 <main class="gutter">
   <div class="stale" id="stale" role="status" hidden><b aria-hidden="true">!</b><span id="stale-text"></span></div>
@@ -171,6 +66,9 @@
 </footer>
 
 <noscript><p class="gutter">A legenda precisa de JavaScript ativado.</p></noscript>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
 (() => {
@@ -264,6 +162,8 @@
     copy: $("#copy"), download: $("#download"), clear: $("#clear"),
     smaller: $("#smaller"), bigger: $("#bigger"), theme: $("#theme"), fullscreen: $("#fullscreen"),
     demoLink: $("#demo-link"), themeColor: document.querySelector('meta[name="theme-color"]'),
+    share: $("#share"), sharePanel: $("#share-panel"), shareState: $("#share-state"), shareLink: $("#share-link"),
+    shareCode: $("#share-code"), shareHide: $("#share-hide"), qr: $("#qr"),
   };
 
   // ---------- Estado ----------
@@ -328,6 +228,7 @@
   const fmtTime = (t) => new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   function renderLive() {
+    sendInterim();
     el.liveText.replaceChildren();
     if (!want && !interim && (!entries.length || el.live.dataset.fresh !== "1")) {
       const ph = document.createElement("span");
@@ -390,6 +291,7 @@
     }
     el.live.dataset.fresh = "1";
     store.set(KEY_HIST, entries);
+    broadcast({ t: "final", i: entries.length - 1, e: entries[entries.length - 1] });
     if (stick) scrollToEnd(); else el.jump.hidden = false;
     setUI();
   }
@@ -613,6 +515,7 @@
     if (clearArmed) {
       clearTimeout(clearArmed); clearArmed = null;
       entries = []; interim = ""; store.del(KEY_HIST);
+      broadcast({ t: "clear" });
       el.clear.textContent = "Apagar";
       el.live.dataset.fresh = "";
       renderHistory(); setUI();
@@ -621,6 +524,100 @@
     el.clear.textContent = "Toque de novo para apagar";
     clearArmed = setTimeout(() => { clearArmed = null; el.clear.textContent = "Apagar"; }, 4000);
   });
+
+  // ---------- Transmissão para o celular do aluno ----------
+  // Conexão direta entre os aparelhos (WebRTC, via PeerJS). O servidor público do PeerJS só apresenta um aparelho
+  // ao outro; o texto da legenda vai direto do notebook para o celular, sem passar por servidor do PIEDUC.
+  const KEY_ROOM = DEMO ? "pieduc-sala-demo" : "pieduc-sala";
+  const KEY_SHARING = DEMO ? "pieduc-transmitindo-demo" : "pieduc-transmitindo";
+  const PEER_PREFIX = "pieduc-sala-";
+  const PEER_OPTS = { config: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun.cloudflare.com:3478" }] } };
+  const conns = new Set();
+  let peer = null, room = store.get(KEY_ROOM, null), sharing = false, idTries = 0, hbTimer = null, sentInterim = "";
+
+  function newRoom() {
+    const A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // sem 0/O, 1/I/L: fácil de digitar
+    return Array.from(crypto.getRandomValues(new Uint8Array(5)), (x) => A[x % A.length]).join("");
+  }
+  const studentUrl = () => new URL("aluno.html?sala=" + room, location.href).href;
+  const openConns = () => [...conns].filter((c) => c.open);
+
+  function liveState() {
+    const last = entries[entries.length - 1];
+    return { want, s: el.status.dataset.s, idle: want ? Date.now() - lastHeard : 0, sameLine: !!(last && Date.now() - last.end < MERGE_MS) };
+  }
+  function broadcast(msg) {
+    if (!conns.size) return;
+    for (const c of conns) { try { if (c.open) c.send(msg); } catch (e) {} }
+  }
+  function sendInterim() {
+    if (interim === sentInterim) return;
+    sentInterim = interim;
+    broadcast(Object.assign({ t: "interim", text: interim }, liveState()));
+  }
+
+  function setShareState(s, text) { el.shareState.dataset.s = s; el.shareState.textContent = text; }
+  function updateShareState() {
+    const n = openConns().length;
+    el.share.textContent = n ? `Transmitindo (${n})` : (sharing ? "Transmissão" : "Transmitir para o aluno");
+    if (!peer || peer.destroyed || peer.disconnected || !peer.open) return;
+    if (n) setShareState("on", n === 1 ? "Celular do aluno conectado." : `${n} celulares conectados.`);
+    else setShareState("ready", "Pronto. Esperando o celular do aluno conectar…");
+  }
+  function renderShare() {
+    const url = studentUrl();
+    el.shareLink.href = url; el.shareLink.textContent = url.replace(/^https?:\/\//, "");
+    el.shareCode.textContent = room;
+    el.qr.replaceChildren();
+    if (window.QRCode) { try { new QRCode(el.qr, { text: url, width: 360, height: 360, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {} }
+  }
+
+  function openPeer() {
+    if (typeof window.Peer !== "function") { setShareState("err", "Não deu para carregar a transmissão. Confira a internet e recarregue a página."); return; }
+    if (peer && !peer.destroyed) return;
+    setShareState("wait", "Conectando ao serviço de transmissão…");
+    const p = new Peer(PEER_PREFIX + room.toLowerCase(), PEER_OPTS);
+    peer = p;
+    p.on("open", () => { idTries = 0; updateShareState(); });
+    p.on("connection", (c) => {
+      const drop = () => { conns.delete(c); updateShareState(); };
+      c.on("open", () => { conns.add(c); try { c.send(Object.assign({ t: "snap", entries, interim }, liveState())); } catch (e) {} updateShareState(); });
+      c.on("close", drop); c.on("error", drop);
+    });
+    p.on("disconnected", () => {
+      if (p !== peer || p.destroyed) return;
+      setShareState("wait", "Reconectando ao serviço de transmissão…");
+      setTimeout(() => { if (p === peer && !p.destroyed && p.disconnected) p.reconnect(); }, 2000);
+    });
+    p.on("error", (err) => {
+      if (p !== peer) return;
+      if (err.type === "unavailable-id") {
+        // a sala ainda está registrada (por exemplo, a página acabou de ser recarregada): espera e tenta de novo
+        // com o mesmo código, para o link do aluno continuar valendo; só troca o código se insistir
+        p.destroy(); peer = null;
+        if (++idTries > 6) { room = newRoom(); store.set(KEY_ROOM, room); idTries = 0; renderShare(); }
+        setShareState("wait", "Preparando a sala…");
+        setTimeout(openPeer, 3000);
+      } else if (["network", "server-error", "socket-error", "socket-closed", "disconnected"].includes(err.type)) {
+        setShareState("wait", "Sem conexão com o serviço de transmissão. Tentando de novo…");
+        setTimeout(() => { if (p !== peer) return; if (p.destroyed) { peer = null; openPeer(); } else if (p.disconnected) p.reconnect(); }, 3000);
+      } else if (err.type === "browser-incompatible") {
+        setShareState("err", "Este navegador não consegue transmitir. Use o Chrome ou o Edge.");
+      } else {
+        setShareState("err", `A transmissão deu um erro (${err.type}). Recarregue a página.`);
+      }
+    });
+  }
+  function startShare() {
+    sharing = true; store.set(KEY_SHARING, true);
+    if (!room) { room = newRoom(); store.set(KEY_ROOM, room); }
+    el.sharePanel.hidden = false;
+    renderShare(); openPeer(); updateShareState();
+    if (!hbTimer) hbTimer = setInterval(() => broadcast(Object.assign({ t: "hb" }, liveState())), 2000);
+  }
+
+  el.share.addEventListener("click", () => { if (!sharing) startShare(); else el.sharePanel.hidden = !el.sharePanel.hidden; });
+  el.shareHide.addEventListener("click", () => { el.sharePanel.hidden = true; });
 
   // ---------- Início ----------
   function showDemoNotice() {
@@ -644,6 +641,8 @@
   } else if (!window.isSecureContext) {
     showMsg("A legenda só consegue usar o microfone em página segura (https). Abra pelo link do GitHub Pages.");
   }
+  // se a transmissão estava ligada antes de recarregar a página, religa com o mesmo código (o link do aluno continua valendo)
+  if (store.get(KEY_SHARING, false) || params.has("transmitir")) startShare();
 })();
 </script>
 </body>
