@@ -17,6 +17,7 @@
   <div class="status" id="status" data-s="idle" role="status"><i aria-hidden="true"></i><span>Parado</span></div>
   <button class="primary" id="toggle" type="button">Começar legenda</button>
   <button id="share" type="button">Transmitir para o aluno</button>
+  <button id="vocab" type="button">Termos da aula</button>
   <div class="tools" role="group" aria-label="Ajustes de leitura">
     <button id="smaller" type="button" aria-label="Diminuir letra">A−</button>
     <button id="bigger" type="button" aria-label="Aumentar letra">A+</button>
@@ -36,6 +37,15 @@
       <p>Código da sala: <b class="code" id="share-code"></b></p>
     </div>
     <button id="share-hide" type="button">Esconder</button>
+  </section>
+  <section class="share vocab" id="vocab-panel" hidden aria-labelledby="vocab-title">
+    <div class="share-info">
+      <p><b id="vocab-title">Termos da aula</b> · um por linha. A legenda escreve esses termos sempre assim.</p>
+      <p>Para corrigir um erro que a legenda repete, escreva <b>errado = certo</b> (ex.: <code>joia = JOIN</code>). Vale para o que vier depois.</p>
+      <textarea id="vocab-text" rows="7" spellcheck="false" aria-label="Termos da aula e correções"></textarea>
+      <p class="vocab-note" id="vocab-note"></p>
+    </div>
+    <button id="vocab-hide" type="button">Esconder</button>
   </section>
 </div>
 
@@ -164,7 +174,41 @@
     demoLink: $("#demo-link"), themeColor: document.querySelector('meta[name="theme-color"]'),
     share: $("#share"), sharePanel: $("#share-panel"), shareState: $("#share-state"), shareLink: $("#share-link"),
     shareCode: $("#share-code"), shareHide: $("#share-hide"), qr: $("#qr"),
+    vocab: $("#vocab"), vocabPanel: $("#vocab-panel"), vocabText: $("#vocab-text"), vocabNote: $("#vocab-note"), vocabHide: $("#vocab-hide"),
   };
+
+  // ---------- Termos da aula ----------
+  // O reconhecimento está em português; termos em inglês (SELECT, JOIN...) podem sair aportuguesados.
+  // Cada linha da lista é um termo (escrito sempre daquele jeito) ou uma correção "errado = certo".
+  const KEY_VOCAB = "pieduc-termos";
+  const DEFAULT_VOCAB = [
+    "SELECT", "FROM", "WHERE", "JOIN", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "GROUP BY", "ORDER BY", "HAVING",
+    "INSERT", "UPDATE", "DELETE", "COMMIT", "ROLLBACK", "TRIGGER", "VIEW", "PRIMARY KEY", "FOREIGN KEY",
+    "SQL", "query", "queries", "schema", "stored procedure", "MySQL", "PostgreSQL",
+  ].join("\n");
+  let vocabRules = [], vocabTerms = [];
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  function compileVocab(src) {
+    vocabRules = []; vocabTerms = [];
+    for (const raw of String(src || "").split("\n")) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) continue;
+      const eq = line.indexOf("=");
+      const from = eq >= 0 ? line.slice(0, eq).trim() : line;
+      const to = eq >= 0 ? line.slice(eq + 1).trim() : line;
+      if (!from || !to) continue;
+      // palavra inteira, sem diferenciar maiúsculas; \p{L} cobre letras acentuadas
+      try { vocabRules.push([new RegExp("(?<![\\p{L}\\p{N}])" + escRe(from) + "(?![\\p{L}\\p{N}])", "giu"), to]); } catch (e) { continue; }
+      if (!vocabTerms.includes(to)) vocabTerms.push(to);
+    }
+    // padrões mais longos primeiro: INNER JOIN antes de JOIN, "chave primária = PRIMARY KEY" antes de termos curtos
+    vocabRules.sort((a, b) => b[0].source.length - a[0].source.length);
+  }
+  function fixTerms(text) {
+    let out = text;
+    for (const [re, to] of vocabRules) out = out.replace(re, to);
+    return out;
+  }
 
   // ---------- Estado ----------
   let entries = store.get(KEY_HIST, []);
@@ -176,6 +220,7 @@
   let startedAt = 0, gotResult = false, fastEnds = 0, retryTimer = null;
   let msgKind = "";
   let lastHeard = 0, staleTimer = null; // quando chegou o último texto (parcial ou final)
+  let phrasesOn = true;     // mandar os termos da aula como dica para o reconhecimento (desliga se o serviço recusar)
 
   // ---------- Preferências (letra e tema) ----------
   const prefs = Object.assign({ scale: 1, theme: null }, store.get(KEY_PREFS, {}));
@@ -274,7 +319,7 @@
   }
 
   function addFinal(raw) {
-    const text = clean(raw);
+    const text = fixTerms(clean(raw));
     if (!text) return;
     const now = Date.now();
     const stick = nearBottom();
@@ -313,6 +358,10 @@
     // texto duplicado. Só o índice não basta: alguns navegadores (e a demonstração) reusam o índice 0 a cada frase.
     r.continuous = true;
     r.maxAlternatives = 1;
+    // dicas para o reconhecimento favorecer os termos da aula (recurso novo do Chrome; se não houver suporte, segue sem)
+    if (phrasesOn && typeof window.SpeechRecognitionPhrase === "function" && vocabTerms.length) {
+      try { r.phrases = vocabTerms.slice(0, 100).map((t) => new SpeechRecognitionPhrase(t, 5)); } catch (e) { phrasesOn = false; }
+    }
     const doneIdx = new Map(); // índice -> texto final já registrado nele
     let lastFinal = "";
 
@@ -334,7 +383,7 @@
       if (r === rec) {
         gotResult = true; fastEnds = 0;
         lastHeard = Date.now();
-        interim = clean(im);
+        interim = fixTerms(clean(im));
         clearMsg("network");
         if (want) setStatus("listening");
         renderLive();
@@ -364,6 +413,9 @@
 
   function handleError(code) {
     switch (code) {
+      case "phrases-not-supported":
+        phrasesOn = false; // o serviço não aceita dicas de termos: segue sem elas (a correção da lista continua valendo)
+        return;
       case "no-speech":
       case "aborted":
         return; // o onend religa sozinho
@@ -406,6 +458,8 @@
       if (el.status.dataset.s !== "listening" && el.status.dataset.s !== "reconnecting") setStatus("connecting");
     } catch (e) {
       running = false;
+      // se o navegador recusar as dicas de termos ao ligar, tenta de novo sem elas antes de contar como falha
+      if (phrasesOn && rec && rec.phrases) { phrasesOn = false; scheduleLaunch(100); return; }
       fastEnds++;
       if (fastEnds >= 6) { stopListening("error"); showMsg("Não deu para ligar o microfone. Recarregue a página e tente de novo."); return; }
       scheduleLaunch(500 * 2 ** (fastEnds - 1));
@@ -615,6 +669,22 @@
     renderShare(); openPeer(); updateShareState();
     if (!hbTimer) hbTimer = setInterval(() => broadcast(Object.assign({ t: "hb" }, liveState())), 2000);
   }
+
+  // ---------- Painel dos termos da aula ----------
+  let vocabTimer = null;
+  function vocabNote() {
+    const n = vocabRules.length;
+    el.vocabNote.textContent = `${n} ${n === 1 ? "termo ativo" : "termos ativos"}. Salvo neste notebook.` +
+      (phrasesOn && typeof window.SpeechRecognitionPhrase === "function" ? " O reconhecimento também recebe os termos como dica." : "");
+  }
+  el.vocabText.value = store.get(KEY_VOCAB, DEFAULT_VOCAB);
+  compileVocab(el.vocabText.value);
+  el.vocabText.addEventListener("input", () => {
+    clearTimeout(vocabTimer);
+    vocabTimer = setTimeout(() => { store.set(KEY_VOCAB, el.vocabText.value); compileVocab(el.vocabText.value); vocabNote(); }, 400);
+  });
+  el.vocab.addEventListener("click", () => { el.vocabPanel.hidden = !el.vocabPanel.hidden; if (!el.vocabPanel.hidden) { vocabNote(); el.vocabText.focus(); } });
+  el.vocabHide.addEventListener("click", () => { el.vocabPanel.hidden = true; });
 
   el.share.addEventListener("click", () => { if (!sharing) startShare(); else el.sharePanel.hidden = !el.sharePanel.hidden; });
   el.shareHide.addEventListener("click", () => { el.sharePanel.hidden = true; });
