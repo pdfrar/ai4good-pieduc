@@ -407,10 +407,11 @@
     r.interimResults = true;
     // Contínuo em todos os aparelhos. Antes, no Android, religávamos a cada frase, e o Chrome tocava um bipe
     // a cada religada: o estudante surdo não ouve, mas a turma inteira ouve. O Android reenvia frases já
-    // finalizadas no modo contínuo; os filtros abaixo (índice já usado e prefixo repetido) evitam texto duplicado.
+    // finalizadas no modo contínuo; os filtros abaixo (mesmo texto no mesmo índice e prefixo repetido) evitam
+    // texto duplicado. Só o índice não basta: alguns navegadores (e a demonstração) reusam o índice 0 a cada frase.
     r.continuous = true;
     r.maxAlternatives = 1;
-    const doneIdx = new Set();
+    const doneIdx = new Map(); // índice -> texto final já registrado nele
     let lastFinal = "";
 
     r.onstart = () => { if (r === rec) setStatus("listening"); };
@@ -420,9 +421,9 @@
         const res = e.results[i];
         let tx = res && res[0] ? res[0].transcript : "";
         if (res.isFinal) {
-          if (doneIdx.has(i)) continue;
-          doneIdx.add(i);
           const full = clean(tx);
+          if (doneIdx.get(i) === full) continue;
+          doneIdx.set(i, full);
           if (IS_ANDROID && lastFinal && full.toLowerCase().startsWith(lastFinal.toLowerCase())) tx = full.slice(lastFinal.length);
           if (full) lastFinal = full;
           addFinal(tx);
