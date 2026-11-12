@@ -7,7 +7,7 @@ Transforma a fala do professor em legenda grande na tela, em tempo real, e guard
 
 ## Como funciona
 
-- Usa a [Web Speech API](https://developer.mozilla.org/docs/Web/API/SpeechRecognition) do navegador, em português (pt-BR). A tela do professor é `index.html` e a do aluno é `aluno.html`, com o visual em `estilo.css`. Não há servidor do PIEDUC.
+- Usa a [Web Speech API](https://developer.mozilla.org/docs/Web/API/SpeechRecognition) do navegador, em português (pt-BR). A tela do professor é `index.html` e a do aluno é `aluno.html`, com o visual em `estilo.css` e a configuração de rede em `rede.js`. Não há servidor do PIEDUC.
 - **Tela única:** a legenda grande mostra as últimas linhas faladas; abaixo fica o histórico da aula, que rola e mantém a posição se o aluno voltar para reler.
 - **Leitura:** letra ajustável (A− / A+), fundo escuro ou claro em alto contraste, tela cheia para projetar e tela sempre acesa enquanto a legenda roda.
 - **Depois da aula:** "Copiar" ou "Baixar .txt" exporta a transcrição com horários, que é a entrada da cadeia de IA (texto adaptado por perfil e tutor socrático).
@@ -29,6 +29,7 @@ Como funciona:
 - O celular do aluno avisa (com aviso grande e vibração) quando a conexão cai, quando a legenda do professor está pausada e quando o microfone do professor passa 15 s sem captar nada.
 - O histórico também fica salvo no celular do aluno, para reler depois.
 - Se a conexão não abrir (algumas redes de universidade bloqueiam conexão entre aparelhos), coloque o notebook e o celular na mesma rede, por exemplo o roteador de um celular.
+- Para redes que bloqueiam conexão direta, dá para ligar um servidor TURN (retransmissão): veja as instruções em `rede.js`. Sem ele, a conexão usa só STUN.
 
 ## Navegadores
 

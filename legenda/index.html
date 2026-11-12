@@ -78,6 +78,7 @@
 <noscript><p class="gutter">A legenda precisa de JavaScript ativado.</p></noscript>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="rede.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script>
@@ -626,11 +627,18 @@
     if (window.QRCode) { try { new QRCode(el.qr, { text: url, width: 360, height: 360, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {} }
   }
 
-  function openPeer() {
+  let opening = false;
+  async function openPeer() {
     if (typeof window.Peer !== "function") { setShareState("err", "Não deu para carregar a transmissão. Confira a internet e recarregue a página."); return; }
-    if (peer && !peer.destroyed) return;
+    if ((peer && !peer.destroyed) || opening) return;
     setShareState("wait", "Conectando ao serviço de transmissão…");
-    const p = new Peer(PEER_PREFIX + room.toLowerCase(), PEER_OPTS);
+    opening = true;
+    let iceServers;
+    try { iceServers = window.pieducIce ? await window.pieducIce() : PEER_OPTS.config.iceServers; }
+    catch (e) { iceServers = PEER_OPTS.config.iceServers; }
+    finally { opening = false; }
+    if (peer && !peer.destroyed) return;
+    const p = new Peer(PEER_PREFIX + room.toLowerCase(), { config: { iceServers } });
     peer = p;
     p.on("open", () => { idTries = 0; updateShareState(); });
     p.on("connection", (c) => {

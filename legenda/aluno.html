@@ -57,6 +57,7 @@
 <noscript><p class="gutter">A legenda precisa de JavaScript ativado.</p></noscript>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="rede.js"></script>
 <script>
 (() => {
   "use strict";
@@ -278,9 +279,17 @@
     c.on("close", () => { if (c === conn) lost(); });
     c.on("error", () => { if (c === conn) lost(); });
   }
-  function startPeer() {
+  let starting = false;
+  async function startPeer() {
     if (typeof window.Peer !== "function") { showMsg("Não deu para carregar a conexão. Confira a internet e recarregue a página."); setStatus("off", "Sem conexão"); return; }
-    const p = new Peer(PEER_OPTS);
+    if (starting || (peer && !peer.destroyed)) return;
+    starting = true;
+    let iceServers;
+    try { iceServers = window.pieducIce ? await window.pieducIce() : PEER_OPTS.config.iceServers; }
+    catch (e) { iceServers = PEER_OPTS.config.iceServers; }
+    finally { starting = false; }
+    if (peer && !peer.destroyed) return;
+    const p = new Peer({ config: { iceServers } });
     peer = p;
     p.on("open", () => { if (p === peer) connect(); });
     p.on("disconnected", () => { if (p === peer && !p.destroyed) setTimeout(() => { if (p === peer && p.disconnected && !p.destroyed) p.reconnect(); }, 2000); });
